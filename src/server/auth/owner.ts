@@ -5,9 +5,14 @@ import { account } from "@/server/drizzle/schemas/auth-schema";
 
 /**
  * The business owner tests paid readings without paying: Mercado Pago won't
- * take the seller's own money.
+ * take the seller's own money. So does his partner, who runs the ads and
+ * checks their events (Purchase) end to end.
  */
-const OWNER_EMAILS = ["hectorzerrillo85@gmail.com"];
+const OWNER_EMAILS = [
+    "hectorzerrillo85@gmail.com",
+    "sfrancobaanante@gmail.com",
+    "santiago@workin2.com",
+];
 
 interface SessionUser {
     email: string;
