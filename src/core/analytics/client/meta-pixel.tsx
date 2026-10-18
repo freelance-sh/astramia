@@ -80,17 +80,23 @@ export function metaEventOnce(
     metaEvent(name, params, id);
 }
 
-/** metaEventOnce from a server-rendered page: fires when it shows. */
+/**
+ * metaEventOnce from a server-rendered page: fires when it shows, or only
+ * when the URL ends in `hash` (how the page knows they just paid).
+ */
 export function MetaEventOnce({
     name,
     readingId,
+    hash,
 }: {
     name: MetaEvent;
     readingId: string;
+    hash?: string;
 }) {
     useEffect(() => {
+        if (hash && window.location.hash !== hash) return;
         metaEventOnce(name, READING_VALUE, readingId);
-    }, [name, readingId]);
+    }, [name, readingId, hash]);
     return null;
 }
 

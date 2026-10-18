@@ -4,7 +4,7 @@ import { Starfield } from "@/core/landing/client/effects";
 import { OFFER } from "@/core/landing/domain/content";
 import { BUSINESS } from "@/core/legal/domain/business";
 import { LEGAL_ROUTES } from "@/core/legal/domain/policies";
-import { paidSkies } from "@/core/reading/domain/story";
+import { CONTINUE_ANCHOR, paidSkies } from "@/core/reading/domain/story";
 import type { ChatMessage, Reading } from "@/core/reading/domain/types";
 import { FormingSky } from "../components/forming-sky";
 import { ReadingChat } from "../components/reading-chat";
@@ -159,10 +159,21 @@ export function UnlockedReadingScreen({
     /** Streams in: the full text may still be being written. */
     content: React.ReactNode;
 }) {
+    // Back from paying: counted as soon as the page shows, not once the full
+    // reading is written (30–60 s): a buyer who doesn't wait still bought.
+    const paid = `#${CONTINUE_ANCHOR}`;
     return (
-        <Suspense fallback={<WritingScreen reading={reading} />}>
-            {content}
-        </Suspense>
+        <>
+            <MetaEventOnce
+                name="AddPaymentInfo"
+                readingId={reading.id}
+                hash={paid}
+            />
+            <MetaEventOnce name="Purchase" readingId={reading.id} hash={paid} />
+            <Suspense fallback={<WritingScreen reading={reading} />}>
+                {content}
+            </Suspense>
+        </>
     );
 }
 

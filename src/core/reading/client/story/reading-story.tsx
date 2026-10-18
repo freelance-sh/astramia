@@ -355,11 +355,8 @@ export function ReadingStory({
     useEffect(() => {
         if (content && window.location.hash === `#${CONTINUE_ANCHOR}`) {
             document.getElementById(CONTINUE_ANCHOR)?.scrollIntoView();
-            // Back from paying: they gave their payment details, and paid.
-            metaEventOnce("AddPaymentInfo", READING_VALUE, reading.id);
-            metaEventOnce("Purchase", READING_VALUE, reading.id);
         }
-    }, [content, reading.id]);
+    }, [content]);
 
     // Once the chat is on screen, "Ir al chat" has nothing left to do. The
     // chat may arrive later, with the paid text, on a page already open.
