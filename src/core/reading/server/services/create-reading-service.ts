@@ -3,9 +3,10 @@ import { ServerConfig } from "@/config/server-config";
 import { generateObject } from "@/core/ai/server/repository/llm";
 import { recordEvent } from "@/core/analytics/server/repository/events";
 import { sunSignOf } from "@/core/reading/domain/chart";
-import { planFor } from "@/core/reading/domain/plan";
+import { planFor } from "@/core/reading/domain/plans";
 import { AI_TASKS, freePrompt } from "@/core/reading/domain/prompts";
 import { chosen } from "@/core/reading/domain/quiz";
+import { FIRST_QUESTION } from "@/core/reading/domain/quizzes";
 import { keepCutMark, keptFree } from "@/core/reading/domain/reading-content";
 import { DAILY_READING_LIMIT } from "@/core/reading/domain/schemas";
 import type { CreateReading } from "@/core/reading/domain/types";
@@ -34,10 +35,19 @@ export async function createReadingService(
             return err(AppErrors.tooManyRequests());
 
         const profile = {
+            topic: input.topic,
             birthDate: input.birthDate,
             birthTime: input.birthTime ?? null,
             birthTimeZone: input.birthTimeZone ?? null,
             birthPlace: input.birthPlace ?? null,
+            birthLatitude: input.birthLatitude ?? null,
+            birthLongitude: input.birthLongitude ?? null,
+            partner: input.partner
+                ? {
+                      birthDate: input.partner.birthDate,
+                      birthTime: input.partner.birthTime ?? null,
+                  }
+                : null,
             answers: input.answers,
         };
         const id = crypto.randomUUID();
@@ -64,7 +74,6 @@ export async function createReadingService(
         const row = await createReading({
             id,
             userId,
-            topic: input.topic,
             ...profile,
             sunSign: sunSignOf(input.birthDate),
             teaser: JSON.stringify(
@@ -76,7 +85,8 @@ export async function createReadingService(
             readingId: row.id,
             props: {
                 topic: input.topic,
-                question: chosen(input.answers, "pregunta") ?? null,
+                question:
+                    chosen(input.answers, FIRST_QUESTION[input.topic]) ?? null,
                 ms: Date.now() - started,
                 writeMs: wrote - started,
                 reviewMs: Date.now() - wrote,

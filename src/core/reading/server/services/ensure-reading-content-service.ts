@@ -3,7 +3,7 @@ import { getLogger } from "@logtape/logtape";
 import { ServerConfig } from "@/config/server-config";
 import { generateObject } from "@/core/ai/server/repository/llm";
 import { recordEvent } from "@/core/analytics/server/repository/events";
-import { planFor } from "@/core/reading/domain/plan";
+import { planFor } from "@/core/reading/domain/plans";
 import { AI_TASKS, paidPrompt } from "@/core/reading/domain/prompts";
 import type { Reading } from "@/core/reading/domain/types";
 import {

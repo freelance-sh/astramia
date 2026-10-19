@@ -326,6 +326,7 @@ export function ReadingStory({
                       chart: reading.chart,
                       question: reading.question,
                       skyAhead: reading.skyAhead,
+                      facts: reading.facts,
                   })
                 : previewStory({
                       topic: reading.topic,
@@ -333,6 +334,7 @@ export function ReadingStory({
                       chart: reading.chart,
                       question: reading.question,
                       skyAhead: reading.skyAhead,
+                      facts: reading.facts,
                   }),
         [reading, content],
     );

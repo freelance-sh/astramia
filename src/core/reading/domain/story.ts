@@ -1,8 +1,9 @@
 import type { MoonPhaseName } from "@/core/landing/domain/ephemeris";
+import type { Body } from "./chart";
+import type { ReadingFacts } from "./facts";
 import { toReadingBlocks } from "./markdown";
 import {
     type PlanScene,
-    planFor,
     type ReadingPlan,
     type SceneContext,
     type SceneTexts,
@@ -10,10 +11,19 @@ import {
     scenesOf,
     sceneText,
 } from "./plan";
+import { planFor } from "./plans";
 import { chosen } from "./quiz";
+import { FIRST_QUESTION } from "./quizzes";
 import { parseTexts } from "./reading-content";
 import { MOON_PHASES, skyFacts } from "./sky-facts";
-import type { NatalChart, QuizAnswer, ReadingTopic, SkyEvent } from "./types";
+import type { PathEvent } from "./transits";
+import type {
+    NatalChart,
+    NatalPlacement,
+    QuizAnswer,
+    ReadingTopic,
+    SkyEvent,
+} from "./types";
 
 /**
  * The paid reading as a story told on scroll: each idea is shown (the Moon
@@ -49,7 +59,32 @@ export type StoryVisual =
     | { kind: "moonPhase"; phase: MoonPhaseName }
     /** Venus over the months ahead; `focus` is where it is (an event index). */
     | { kind: "venusPath"; events: readonly SkyEvent[]; focus?: number }
-    | { kind: "star" };
+    | { kind: "star" }
+    /** Two charts, one over the other: theirs outside; `focus` lights a contact. */
+    | {
+          kind: "synastry";
+          mine: readonly NatalPlacement[];
+          theirs: readonly NatalPlacement[];
+          focus?: readonly [Body, Body];
+      }
+    /** The sign rising in the east the moment they were born. */
+    | {
+          kind: "rising";
+          sign: string;
+          /** Unsure birth time: the sign it would be 20 minutes off. */
+          near: string | null;
+          /** Their Sun, shown beside it ("how they see you" against "who you are"). */
+          sun?: string;
+      }
+    /** The slow planets today around their chart; `focus` lights one transit. */
+    | {
+          kind: "transits";
+          natal: readonly NatalPlacement[];
+          sky: readonly NatalPlacement[];
+          focus?: { body: string; natal?: string };
+      }
+    /** The slow planets' moments over the year ahead; `focus` is the one read. */
+    | { kind: "path"; events: readonly PathEvent[]; focus?: number };
 
 /** A body shown with its title, and the model's text about it. */
 type SceneStep = {
@@ -106,6 +141,8 @@ export interface StoryInput {
     chart: NatalChart;
     question: string | null;
     skyAhead: readonly SkyEvent[];
+    /** The readings past love: their extra sky. */
+    facts?: ReadingFacts | null;
 }
 
 const NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
@@ -121,13 +158,35 @@ export function visualKey(visual: StoryVisual): string {
         case "pair":
             return `pair:${visual.bodies.join("+")}`;
         default:
-            // venusPath keeps one key: Venus travels between its stops.
+            // venusPath keeps one key: Venus travels between its stops; the
+            // two charts, the horizon, the transits and the year stay put
+            // while what they light changes.
             return visual.kind;
     }
 }
 
 /** "¿Qué quieres saber primero?" answers, said back as their question. */
 const QUESTIONS: Record<string, string> = {
+    // Compatibility.
+    compatibles: "¿De verdad somos compatibles?",
+    chocamos: "¿Por qué chocamos en lo mismo?",
+    necesita: "¿Qué necesita esa persona de mí?",
+    hacia_donde: "¿Hacia dónde puede ir esto?",
+    no_funciono: "¿Por qué no funcionó?",
+    intentarlo: "¿Tiene sentido intentarlo de nuevo?",
+    // Personality.
+    me_ven: "¿Por qué me ven distinto a como soy?",
+    paz: "¿Qué me hace sentir en paz?",
+    fuerza: "¿Cuál es mi mayor fuerza?",
+    tropiezo: "¿Por qué tropiezo con lo mismo?",
+    rumbo: "¿Qué camino va conmigo?",
+    // Path.
+    capitulo: "¿Qué capítulo estoy viviendo?",
+    se_mueve: "¿Cuándo se mueve lo que está quieto?",
+    me_pide: "¿Qué me pide este momento?",
+    viene: "¿Qué viene en los próximos meses?",
+    decision_grande: "¿Es momento de una decisión grande?",
+    // Love.
     volvera: "¿Esa persona va a volver?",
     cuando: "¿Cuándo llega alguien para mí?",
     por_que: "¿Por qué me pasa siempre lo mismo?",
@@ -138,11 +197,19 @@ const QUESTIONS: Record<string, string> = {
     cuidar: "¿Cómo cuido lo que tenemos?",
 };
 
-export function storyQuestion(answers: readonly QuizAnswer[]): string | null {
-    const id = chosen(answers, "pregunta");
+export function storyQuestion(
+    answers: readonly QuizAnswer[],
+    topic: ReadingTopic = "amor",
+): string | null {
+    const id = chosen(answers, FIRST_QUESTION[topic]);
     // Never really in love: "always the same" is that it hasn't happened.
     if (id === "por_que" && chosen(answers, "ultimo_amor") === "nunca")
         return "¿Por qué todavía no me pasa?";
+    // An ex: asked in the past, as the quiz offered it.
+    if (chosen(answers, "vinculo") === "ex") {
+        if (id === "chocamos") return "¿Por qué chocábamos en lo mismo?";
+        if (id === "necesita") return "¿Qué necesitaba esa persona de mí?";
+    }
     return (id && QUESTIONS[id]) ?? null;
 }
 
@@ -168,12 +235,13 @@ function splitLong(text: string): string[] {
 }
 
 function context(
-    input: Pick<StoryInput, "chart" | "question" | "skyAhead">,
+    input: Pick<StoryInput, "chart" | "question" | "skyAhead" | "facts">,
 ): SceneContext {
     return {
         sky: skyFacts(input.chart),
         question: input.question,
         skyAhead: input.skyAhead,
+        facts: input.facts ?? null,
     };
 }
 
@@ -198,13 +266,18 @@ function sceneSteps(
     chapter: () => number,
 ): StoryStep[] {
     if (scene.kind === "moments") {
-        // Each moment moves Venus to its date; ones that point nowhere are left out.
+        // Each moment moves its planet to its date; ones that point nowhere
+        // are left out.
+        const path = scene.visual(c);
+        const events =
+            path.kind === "venusPath" || path.kind === "path"
+                ? path.events.length
+                : 0;
         const moments = sceneMoments(texts).filter(
-            (m) => m.event >= 1 && m.event <= c.skyAhead.length,
+            (m) => m.event >= 1 && m.event <= events,
         );
         if (!moments.length) return [];
         const index = chapter();
-        const path = scene.visual(c);
         return moments.map(
             (moment, n): StoryStep => ({
                 kind: "scene",
@@ -212,7 +285,7 @@ function sceneSteps(
                 title: n === 0 ? scene.title?.(c) : undefined,
                 text: moment.text,
                 visual:
-                    path.kind === "venusPath"
+                    path.kind === "venusPath" || path.kind === "path"
                         ? { ...path, focus: moment.event - 1 }
                         : path,
                 chapter: index,
@@ -475,7 +548,10 @@ function markdownStory(input: StoryInput): Story {
  * screen shows while that part is being written. Their Sun, if none.
  */
 export function paidSkies(
-    input: Pick<StoryInput, "topic" | "chart" | "question" | "skyAhead">,
+    input: Pick<
+        StoryInput,
+        "topic" | "chart" | "question" | "skyAhead" | "facts"
+    >,
 ): { body: StoryBody; sign: string }[] {
     const c = context(input);
     const skies = planFor(input.topic).paid.flatMap((scene) => {
@@ -498,7 +574,7 @@ export function paidSkies(
 export function previewStory(
     input: Pick<
         StoryInput,
-        "topic" | "teaser" | "chart" | "question" | "skyAhead"
+        "topic" | "teaser" | "chart" | "question" | "skyAhead" | "facts"
     >,
 ): Story {
     const plan = planFor(input.topic);

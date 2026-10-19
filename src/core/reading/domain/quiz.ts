@@ -502,8 +502,11 @@ export const QUIZ_LENGTH = quizLength();
  * Exactly the questions these answers lead to, each answered the way it
  * asks: nothing missing, nothing left from a path they turned back on.
  */
-export function isCompleteQuiz(answers: readonly QuizAnswer[]): boolean {
-    const asked = questionsFor(answers);
+export function isCompleteQuiz(
+    answers: readonly QuizAnswer[],
+    quiz: readonly QuizQuestion[] = LOVE_QUIZ,
+): boolean {
+    const asked = questionsFor(answers, quiz);
     return (
         answers.length === asked.length &&
         asked.every((q) =>
@@ -557,8 +560,9 @@ export function labelFor(
 export function describeAnswer(
     answer: QuizAnswer,
     all: readonly QuizAnswer[] = [answer],
+    quiz: readonly QuizQuestion[] = LOVE_QUIZ,
 ): { question: string; answer: string } | undefined {
-    const question = [...LOVE_QUIZ, ...RETIRED].find(
+    const question = [...quiz, ...RETIRED].find(
         (q) => q.id === answer.questionId,
     );
     const say = (id: string) => {

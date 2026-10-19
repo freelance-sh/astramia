@@ -1,4 +1,5 @@
 import {
+    doublePrecision,
     index,
     jsonb,
     pgEnum,
@@ -8,7 +9,12 @@ import {
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
 
-export const readingTopic = pgEnum("reading_topic", ["amor"]);
+export const readingTopic = pgEnum("reading_topic", [
+    "amor",
+    "compatibilidad",
+    "personalidad",
+    "camino",
+]);
 export const chatRole = pgEnum("chat_role", ["user", "assistant"]);
 
 /**
@@ -32,6 +38,14 @@ export const readings = pgTable(
         /** IANA zone `birthTime` is read in (the browser's); null → America/Lima. */
         birthTimeZone: text("birth_time_zone"),
         birthPlace: text("birth_place"),
+        /** The birthplace picked from the list (the Ascendant needs it). */
+        birthLatitude: doublePrecision("birth_latitude"),
+        birthLongitude: doublePrecision("birth_longitude"),
+        /** The other person, in a compatibility reading. */
+        partner: jsonb("partner").$type<{
+            birthDate: string;
+            birthTime: string | null;
+        }>(),
         sunSign: text("sun_sign").notNull(),
         answers: jsonb("answers")
             .$type<

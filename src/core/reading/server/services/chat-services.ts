@@ -2,7 +2,7 @@ import "server-only";
 import { ServerConfig } from "@/config/server-config";
 import { stream } from "@/core/ai/server/repository/llm";
 import { recordEvent } from "@/core/analytics/server/repository/events";
-import { planFor } from "@/core/reading/domain/plan";
+import { planFor } from "@/core/reading/domain/plans";
 import { AI_TASKS, chatSystemPrompt } from "@/core/reading/domain/prompts";
 import { CHAT_LIMITS } from "@/core/reading/domain/schemas";
 import type { ChatMessage } from "@/core/reading/domain/types";
