@@ -59,7 +59,7 @@ export function Pricing() {
                     <TiltCard className="border-astral-gold/30 bg-card shadow-[0_0_80px_-30px_var(--astral-gold)]">
                         <CardHeader className="gap-1">
                             <p className="font-mono text-[11px] text-astral-gold/80 uppercase tracking-[0.24em]">
-                                Lectura de amor y relaciones
+                                Una lectura, la que elijas
                             </p>
                             <p className="font-display text-2xl">
                                 Lo que incluye

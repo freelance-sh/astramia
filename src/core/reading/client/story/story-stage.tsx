@@ -3,6 +3,12 @@
 import { AnimatePresence, motion } from "motion/react";
 import { type StoryVisual, visualKey } from "@/core/reading/domain/story";
 import type { NatalChart } from "@/core/reading/domain/types";
+import {
+    PathScene,
+    RisingScene,
+    SynastryScene,
+    TransitsScene,
+} from "./scenes/chart-scenes";
 import { PairScene } from "./scenes/pair-scene";
 import { SkyScene, StarScene } from "./scenes/sky-scenes";
 import { SolarSystemScene } from "./scenes/solar-system-scene";
@@ -51,6 +57,32 @@ function Scene({
             return (
                 <PairScene bodies={visual.bodies} chart={chart} born={born} />
             );
+        case "synastry":
+            return (
+                <SynastryScene
+                    mine={visual.mine}
+                    theirs={visual.theirs}
+                    focus={visual.focus}
+                />
+            );
+        case "rising":
+            return (
+                <RisingScene
+                    sign={visual.sign}
+                    near={visual.near}
+                    sun={visual.sun}
+                />
+            );
+        case "transits":
+            return (
+                <TransitsScene
+                    natal={visual.natal}
+                    sky={visual.sky}
+                    focus={visual.focus}
+                />
+            );
+        case "path":
+            return <PathScene events={visual.events} focus={visual.focus} />;
     }
 }
 

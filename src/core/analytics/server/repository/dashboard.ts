@@ -323,7 +323,9 @@ export async function quizSteps(
         select (props ->> 'step')::int as step,
             count(distinct visitor_id) as visitors
         from events
+        -- The steps are the love quiz's; the others have their own.
         where name = 'quiz_answer' and at >= ${since}
+            and coalesce(props ->> 'topic', 'amor') = 'amor'
         group by 1 order by 1
     `);
     return found.map((r) => ({

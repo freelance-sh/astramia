@@ -1,5 +1,6 @@
 import "server-only";
 import { LOVE_QUIZ, optionLabel } from "@/core/reading/domain/quiz";
+import { QUIZZES } from "@/core/reading/domain/quizzes";
 import * as query from "../repository/dashboard";
 
 /** The panel's time ranges, in days; "todo" is since the first event. */
@@ -19,7 +20,28 @@ const LATENCY_LABELS: Record<string, string> = {
     chat_reply: "Respuesta del Sol",
 };
 
-/** Each quiz step as the reader meets it; the third is the follow-up. */
+const TOPIC_LABELS: Record<string, string> = {
+    compatibilidad: "Compatibilidad",
+    personalidad: "Personalidad",
+    camino: "Camino",
+};
+
+/**
+ * Every questionnaire's questions, each once (they share only the first),
+ * the ones past love named with their reading.
+ */
+const ALL_QUESTIONS = Object.entries(QUIZZES)
+    .flatMap(([topic, quiz]) =>
+        quiz.map((q) => ({
+            ...q,
+            question: TOPIC_LABELS[topic]
+                ? `${TOPIC_LABELS[topic]} · ${q.question}`
+                : q.question,
+        })),
+    )
+    .filter((q, i, all) => all.findIndex((o) => o.id === q.id) === i);
+
+/** Each love quiz step as the reader meets it; the third is the follow-up. */
 function quizStepLabels(): string[] {
     const main = LOVE_QUIZ.filter((q) => !q.after).map((q) => q.question);
     return [...main.slice(0, 2), "Pregunta de seguimiento", ...main.slice(2)];
@@ -71,7 +93,9 @@ export async function dashboardService(range: RangeKey) {
     ]);
 
     // Choice questions: each option's share of that question's answers.
-    const questions = LOVE_QUIZ.filter((q) => (q.kind ?? "choice") === "choice")
+    const questions = ALL_QUESTIONS.filter(
+        (q) => (q.kind ?? "choice") === "choice",
+    )
         .map((q) => {
             const counts = choices.filter((c) => c.question === q.id);
             const total = counts.reduce((n, c) => n + c.count, 0);
@@ -100,7 +124,7 @@ export async function dashboardService(range: RangeKey) {
         .filter((q) => q.total > 0);
 
     // Rankings: how often each option came first, and its average place.
-    const rankings = LOVE_QUIZ.filter((q) => q.kind === "rank").map((q) => {
+    const rankings = ALL_QUESTIONS.filter((q) => q.kind === "rank").map((q) => {
         const counts = ranks.filter((r) => r.question === q.id);
         const total = counts
             .filter((r) => r.place === 1)

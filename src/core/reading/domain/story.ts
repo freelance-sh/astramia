@@ -552,16 +552,44 @@ export function paidSkies(
         StoryInput,
         "topic" | "chart" | "question" | "skyAhead" | "facts"
     >,
-): { body: StoryBody; sign: string }[] {
+): { body: string; sign: string }[] {
     const c = context(input);
     const skies = planFor(input.topic).paid.flatMap((scene) => {
         const visual = scene.visual(c);
-        return visual.kind === "planet"
-            ? [{ body: visual.body, sign: visual.sign }]
-            : [];
+        switch (visual.kind) {
+            case "planet":
+                return [{ body: visual.body, sign: visual.sign }];
+            case "rising":
+                return [{ body: "Ascendente", sign: visual.sign }];
+            case "synastry": {
+                if (!visual.focus) return [];
+                const [a, b] = visual.focus;
+                const mine = visual.mine.find((p) => p.body === a);
+                const theirs = visual.theirs.find((p) => p.body === b);
+                return [
+                    ...(mine ? [{ body: `Tu ${a}`, sign: mine.sign }] : []),
+                    ...(theirs ? [{ body: `Su ${b}`, sign: theirs.sign }] : []),
+                ];
+            }
+            case "transits": {
+                const at = visual.sky.find(
+                    (p) => p.body === visual.focus?.body,
+                );
+                return at ? [{ body: at.body, sign: at.sign }] : [];
+            }
+            default:
+                return [];
+        }
     });
-    return skies.length
-        ? skies
+    // The same sign twice in a row would just hold the screen.
+    const distinct = skies.filter(
+        (s, i) =>
+            i === 0 ||
+            s.sign !== skies[i - 1].sign ||
+            s.body !== skies[i - 1].body,
+    );
+    return distinct.length
+        ? distinct
         : [{ body: "Sol", sign: input.chart.placements[0].sign }];
 }
 

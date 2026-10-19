@@ -32,6 +32,7 @@ export async function listReadings(userId: string) {
     return db.query.readings.findMany({
         columns: {
             id: true,
+            topic: true,
             sunSign: true,
             unlockedAt: true,
             createdAt: true,

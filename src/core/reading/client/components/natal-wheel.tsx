@@ -14,8 +14,15 @@ export const WHEEL_DRAW_STEPS = 5;
 export const BODY_GLYPHS: Record<string, string> = {
     Sol: "☉︎",
     Luna: "☾︎",
+    Mercurio: "☿︎",
     Venus: "♀︎",
     Marte: "♂︎",
+    Júpiter: "♃︎",
+    Saturno: "♄︎",
+    Urano: "♅︎",
+    Neptuno: "♆︎",
+    Plutón: "♇︎",
+    Ascendente: "AC",
 };
 
 export const ASPECT_COLOR: Record<AspectName, string> = {
@@ -30,7 +37,7 @@ export const ASPECT_COLOR: Record<AspectName, string> = {
  * 0° Aries on the left and the zodiac running counter-clockwise, as natal
  * charts are drawn. Rounded so server and client markup match (hydration).
  */
-function point(longitude: number, radius: number) {
+export function point(longitude: number, radius: number) {
     const angle = ((180 + longitude) * Math.PI) / 180;
     return {
         x: Math.round((C + radius * Math.cos(angle)) * 100) / 100,

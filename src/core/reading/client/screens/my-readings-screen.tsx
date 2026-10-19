@@ -5,6 +5,7 @@ import { SaveAccountCard } from "@/core/account/client/save-account-card";
 import { SignOutLink } from "@/core/account/client/sign-out-link";
 import { GoldButton } from "@/core/landing/client/effects";
 import { START_READING_HREF } from "@/core/landing/domain/content";
+import { planFor } from "@/core/reading/domain/plans";
 import type { ReadingSummary } from "@/core/reading/domain/types";
 import { ReadingShell } from "./reading-shell";
 
@@ -39,7 +40,7 @@ function ReadingList({ readings }: { readings: ReadingSummary[] }) {
                     >
                         <span className="flex flex-col gap-1">
                             <span className="font-display text-xl">
-                                Lectura de amor · {r.sunSign}
+                                Lectura {planFor(r.topic).of} · {r.sunSign}
                             </span>
                             <span className="font-mono text-[11px] text-muted-foreground uppercase tracking-[0.16em]">
                                 {longDate(r.createdAt)} ·{" "}

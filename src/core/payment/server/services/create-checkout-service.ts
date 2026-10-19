@@ -23,6 +23,8 @@ export async function createCheckoutService(input: {
     /** Origin the buyer is on (`requestOrigin`): they come back to it. */
     origin: string;
     payerEmail?: string;
+    /** What the buyer sees on the gateway, when it's more precise than the product's. */
+    title?: string;
 }): AsyncAppResult<CheckoutResponse> {
     const gateway = getActivePaymentGateway();
     const product = PRODUCTS[input.productId];
@@ -46,7 +48,7 @@ export async function createCheckoutService(input: {
         const session = await gateway.createCheckout({
             orderId: order.id,
             productId: input.productId,
-            title: product.title,
+            title: input.title ?? product.title,
             price: product.price,
             payerEmail: input.payerEmail,
             successUrl: returnUrl.toString(),

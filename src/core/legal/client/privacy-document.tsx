@@ -67,11 +67,22 @@ const SECTIONS: LegalSection[] = [
                                 más de tu cuenta de Google.
                             </>,
                             <>
-                                <strong>
-                                    Datos de nacimiento (opcionales):
-                                </strong>{" "}
-                                fecha, hora y lugar de nacimiento, usados para
+                                <strong>Datos de nacimiento:</strong> fecha y,
+                                según la lectura, hora y lugar de nacimiento (si
+                                eliges tu ciudad de la lista, también sus
+                                coordenadas y su zona horaria), usados para
                                 calcular tu carta astral.
+                            </>,
+                            <>
+                                <strong>
+                                    Datos de otra persona (solo en
+                                    Compatibilidad):
+                                </strong>{" "}
+                                su fecha de nacimiento y, si la indicas, su
+                                hora. No pedimos su nombre ni nada que la
+                                identifique; los usamos solo para calcular su
+                                carta junto a la tuya en esa lectura. Ingrésalos
+                                solo si crees que esa persona no se opondría.
                             </>,
                             <>
                                 <strong>Respuestas del cuestionario:</strong> lo
@@ -250,6 +261,12 @@ const SECTIONS: LegalSection[] = [
                             generar tu lectura y las respuestas del chat, bajo
                             condiciones que les impiden usarlos para entrenar
                             sus modelos.
+                        </>,
+                        <>
+                            <strong>Búsqueda de ciudad:</strong> para ubicar tu
+                            ciudad de nacimiento, enviamos el nombre que
+                            escribes, sin ningún otro dato tuyo, a Open-Meteo
+                            (un servicio de geocodificación).
                         </>,
                         <>
                             <strong>Infraestructura:</strong> proveedores de

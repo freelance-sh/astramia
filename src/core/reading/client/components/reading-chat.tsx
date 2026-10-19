@@ -7,7 +7,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { track } from "@/core/analytics/client/track";
 import { CHAT_LIMITS } from "@/core/reading/domain/schemas";
-import type { ChatMessage } from "@/core/reading/domain/types";
+import type { ChatMessage, ReadingTopic } from "@/core/reading/domain/types";
 import { Button } from "@/frontend/components/ui/button";
 import { Textarea } from "@/frontend/components/ui/textarea";
 import { cn } from "@/frontend/lib/utils";
@@ -31,12 +31,32 @@ function textOf(message: UIMessage): string {
 const HOUR_MS = 60 * 60 * 1000;
 
 /** A blank box is the hardest part: a few first questions to tap. */
-const SUGGESTIONS = [
-    "¿Por qué me pasa siempre lo mismo?",
-    "¿Qué hago esta semana con lo que siento?",
-    "Explícame mejor mi Venus",
-    "¿Cómo sé si alguien me conviene?",
-];
+const SUGGESTIONS: Record<ReadingTopic, readonly string[]> = {
+    amor: [
+        "¿Por qué me pasa siempre lo mismo?",
+        "¿Qué hago esta semana con lo que siento?",
+        "Explícame mejor mi Venus",
+        "¿Cómo sé si alguien me conviene?",
+    ],
+    compatibilidad: [
+        "¿Qué hago cuando chocamos?",
+        "¿Cómo le digo lo que necesito?",
+        "¿Qué le cuesta a esa persona de mí?",
+        "¿Qué cuidamos primero?",
+    ],
+    personalidad: [
+        "¿Por qué me cuesta tanto mostrarme?",
+        "Explícame mejor mi Ascendente",
+        "¿En qué trabajo brillaría?",
+        "¿Qué hago con lo que me frena?",
+    ],
+    camino: [
+        "¿Qué hago este mes?",
+        "¿Cuándo es buen momento para decidir?",
+        "Explícame mejor lo de Saturno",
+        "¿Qué suelto y qué sostengo?",
+    ],
+};
 
 /**
  * Formatted after mount: the server doesn't know the visitor's time zone, and
@@ -210,6 +230,7 @@ export function ReadingChat({
     initialMessages,
     expiresAt,
     sunSign,
+    topic = "amor",
     demo = false,
 }: {
     readingId: string;
@@ -217,6 +238,8 @@ export function ReadingChat({
     /** `null` until the first question: that's when the hours start. */
     expiresAt: string | null;
     sunSign: string;
+    /** Which reading it is: what the first questions offered are about. */
+    topic?: ReadingTopic;
     /** The /lectura/ejemplo preview: shows the chat, never sends. */
     demo?: boolean;
 }) {
@@ -435,7 +458,7 @@ export function ReadingChat({
                             aria-label="Preguntas para empezar"
                             className="flex flex-wrap justify-center gap-2"
                         >
-                            {SUGGESTIONS.map((question) => (
+                            {SUGGESTIONS[topic].map((question) => (
                                 <li key={question}>
                                     <button
                                         type="button"
