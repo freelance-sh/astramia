@@ -284,7 +284,11 @@ rising: El Ascendente es el signo que salía por el horizonte cuando naciste: es
             title: (c) => {
                 const body = ruler(c);
                 const at = c.facts?.bodies.find((p) => p.body === body);
-                return body && at ? `${body} estaba en ${at.sign}` : undefined;
+                if (!body || !at) return undefined;
+                // "El Sol", "La Luna"; the planets go by their name alone.
+                const article =
+                    body === "Sol" ? "El " : body === "Luna" ? "La " : "";
+                return `${article}${body} estaba en ${at.sign}`;
             },
             visual: rulerVisual,
             label: "El planeta que guía tu Ascendente",

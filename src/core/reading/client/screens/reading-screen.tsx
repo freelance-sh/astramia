@@ -203,6 +203,7 @@ export function ReadingBody({
                     initialMessages={messages}
                     expiresAt={reading.chatExpiresAt}
                     sunSign={reading.sunSign}
+                    topic={reading.topic}
                 />
             }
         />

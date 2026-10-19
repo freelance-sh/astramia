@@ -222,6 +222,7 @@ export const readingSchema = z.object({
 /** A row of "Mis lecturas": no texts. */
 export const readingSummarySchema = z.object({
     id: z.string(),
+    topic: readingTopicSchema,
     sunSign: z.string(),
     unlocked: z.boolean(),
     createdAt: z.string(),

@@ -64,8 +64,13 @@ export interface Experience {
     description: string;
     /** Astro detail that anchors the reading, shown as marginalia. */
     anchor: string;
+    /** What it asks beyond the date, said before they start. */
+    needs?: string;
     available: boolean;
 }
+
+/** Where each reading's questionnaire starts. */
+export const readingHref = (id: string) => `/lectura/${id}`;
 
 export const EXPERIENCES: Experience[] = [
     {
@@ -84,7 +89,8 @@ export const EXPERIENCES: Experience[] = [
         description:
             "Dos cartas, una sobre la otra. Dónde encajan sin esfuerzo y dónde van a chocar.",
         anchor: "Sinastría",
-        available: false,
+        needs: "Con su fecha de nacimiento",
+        available: true,
     },
     {
         id: "personalidad",
@@ -93,7 +99,8 @@ export const EXPERIENCES: Experience[] = [
         description:
             "Sol, Luna y Ascendente: cómo te ven, cómo te sientes y cómo te presentas.",
         anchor: "Sol · Luna · ASC",
-        available: false,
+        needs: "Con tu hora y ciudad de nacimiento",
+        available: true,
     },
     {
         id: "camino",
@@ -102,7 +109,7 @@ export const EXPERIENCES: Experience[] = [
         description:
             "Los tránsitos que estás atravesando y qué capítulo te están abriendo.",
         anchor: "Tránsitos",
-        available: false,
+        available: true,
     },
 ];
 
@@ -119,7 +126,7 @@ export const STEPS: Step[] = [
         numeral: "01",
         title: "Elige tu lectura",
         description:
-            "Por ahora, amor y relaciones. Es la pregunta que más nos llega y la que mejor sabemos leer.",
+            "Amor, compatibilidad, personalidad o tu camino. Empieza por la pregunta que te trae hoy.",
         note: "1 min",
     },
     {
@@ -183,8 +190,11 @@ export const DEMO_CHAT: ChatMessage[] = [
 ];
 
 export const PRICING_INCLUDES = [
-    { item: "Lectura de amor y relaciones", detail: "escrita para ti" },
-    { item: "Tu carta natal interpretada", detail: "Sol, Luna, Venus, Marte" },
+    { item: "Una lectura completa", detail: "la que elijas, escrita para ti" },
+    {
+        item: "Tu carta natal interpretada",
+        detail: "con datos astronómicos reales",
+    },
     {
         item: `${OFFER.chatHours} horas de chat con tu Sol`,
         detail: "conoce tu carta y tu lectura",
@@ -234,11 +244,11 @@ export interface Faq {
 export const FAQS: Faq[] = [
     {
         question: `¿Qué recibo exactamente por ${OFFER.price}?`,
-        answer: `Una lectura de amor y relaciones escrita a partir de tu carta y tus respuestas, más ${OFFER.chatHours} horas de conversación con tu Sol: una IA que conoce tu carta y tu lectura. La lectura queda guardada para siempre. Las ${OFFER.chatHours} horas de chat empiezan con tu primera pregunta, no al pagar.`,
+        answer: `Una lectura completa (de amor, compatibilidad, personalidad o tu camino) escrita a partir de tu carta y tus respuestas, más ${OFFER.chatHours} horas de conversación con tu Sol: una IA que conoce tu carta y tu lectura. La lectura queda guardada para siempre. Las ${OFFER.chatHours} horas de chat empiezan con tu primera pregunta, no al pagar.`,
     },
     {
         question: "¿Necesito saber mi hora exacta de nacimiento?",
-        answer: "No. Con la fecha calculamos tu Sol, Venus y Marte, que es lo que más pesa en una lectura de amor. La Luna cambia de signo cada dos días y medio: con la hora queda exacta, y sin ella te decimos con honestidad si quedó entre dos signos.",
+        answer: "Para la mayoría, no. Con la fecha calculamos tu Sol, Venus, Marte y los demás planetas. La Luna cambia de signo cada dos días y medio: con la hora queda exacta, y sin ella te decimos con honestidad si quedó entre dos signos. Solo la lectura de personalidad necesita tu hora y tu ciudad: tu Ascendente cambia de signo cada dos horas.",
     },
     {
         question: `¿Qué pasa cuando terminan las ${OFFER.chatHours} horas?`,

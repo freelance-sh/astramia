@@ -17,13 +17,14 @@ import { track } from "@/core/analytics/client/track";
 import { Starfield } from "@/core/landing/client/effects";
 import { AstramiaLogo } from "@/core/landing/client/sections/astramia-logo";
 import { longDate, shortDate } from "@/core/reading/domain/chart";
+import { planFor } from "@/core/reading/domain/plans";
 import {
     buildStory,
     CONTINUE_ANCHOR,
     previewStory,
     type StoryStep,
 } from "@/core/reading/domain/story";
-import type { Reading } from "@/core/reading/domain/types";
+import type { Reading, ReadingTopic } from "@/core/reading/domain/types";
 import { cn } from "@/frontend/lib/utils";
 import { renderInline } from "../components/reading-text";
 import { StoryStage } from "./story-stage";
@@ -275,8 +276,32 @@ function computedFrom(reading: Reading): string {
     // The date is in the line above; this one adds the hour and place.
     const when = reading.birthTime ? ` a las ${reading.birthTime}` : "";
     const where = reading.birthPlace ? `, en ${reading.birthPlace}` : "";
-    return `Calculado con la posición real del Sol, la Luna, Venus y Marte${when || where ? `${when}${where}` : " ese día"}.`;
+    const bodies =
+        reading.topic === "amor"
+            ? "del Sol, la Luna, Venus y Marte"
+            : "del Sol, la Luna y los planetas";
+    return `Calculado con la posición real ${bodies}${when || where ? `${when}${where}` : " ese día"}.`;
 }
+
+/** The cover's title and the story it promises, per reading. */
+const COVER_COPY: Record<ReadingTopic, { title: string; story: string }> = {
+    amor: {
+        title: "Los astros el día que naciste",
+        story: "Esta es la historia que cuenta sobre cómo amas.",
+    },
+    compatibilidad: {
+        title: "Dos cielos, frente a frente",
+        story: "Junto al de esa persona, esta es la historia que cuentan sobre lo que hay entre ustedes.",
+    },
+    personalidad: {
+        title: "Los astros el día que naciste",
+        story: "Esta es la historia que cuenta sobre quién eres.",
+    },
+    camino: {
+        title: "Tu cielo y el de hoy",
+        story: "Con el cielo de hoy encima, esta es la historia que cuenta sobre tu momento.",
+    },
+};
 
 /** Steps that introduce something get the whole screen; text, a bit less. */
 function stepHeight(step: StoryStep): string {
@@ -578,15 +603,16 @@ export function ReadingStory({
                                 className="flex flex-col gap-4"
                             >
                                 <p className="font-mono text-[11px] text-astral-gold uppercase tracking-[0.24em]">
-                                    Tu lectura de amor · {reading.sunSign}
+                                    Tu lectura {planFor(reading.topic).of} ·{" "}
+                                    {reading.sunSign}
                                 </p>
                                 <h1 className="text-balance font-display text-4xl leading-[1.02] sm:text-6xl lg:text-7xl">
-                                    Los astros el día que naciste
+                                    {COVER_COPY[reading.topic].title}
                                 </h1>
                                 <p className="max-w-md text-pretty text-base text-muted-foreground sm:text-lg">
                                     Así estaba el cielo el{" "}
-                                    {longDate(reading.birthDate)}. Esta es la
-                                    historia que cuenta sobre cómo amas.
+                                    {longDate(reading.birthDate)}.{" "}
+                                    {COVER_COPY[reading.topic].story}
                                 </p>
                                 <p className="max-w-md text-pretty font-mono text-[11px] text-muted-foreground uppercase leading-relaxed tracking-[0.14em]">
                                     {computedFrom(reading)}

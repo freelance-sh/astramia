@@ -9,6 +9,7 @@ import { metaCustomEvent, metaEvent } from "@/core/analytics/client/meta-pixel";
 import { track } from "@/core/analytics/client/track";
 import { GoldButton } from "@/core/landing/client/effects";
 import { MONTHS_ES } from "@/core/landing/domain/zodiac";
+import { PRIVACY_COMMITMENTS } from "@/core/legal/domain/policies";
 import { natalChart } from "@/core/reading/domain/chart";
 import {
     chosen,
@@ -25,7 +26,9 @@ import {
     createReadingSchema,
 } from "@/core/reading/domain/schemas";
 import type {
+    CreateReading,
     NatalChart,
+    Place,
     QuizAnswer,
     ReadingTopic,
 } from "@/core/reading/domain/types";
@@ -43,6 +46,7 @@ import {
 import { Spinner } from "@/frontend/components/ui/spinner";
 import { useReadings } from "../hooks";
 import { ChartReveal } from "./chart-reveal";
+import { PlaceSearch } from "./place-search";
 import { RankQuestion } from "./rank-question";
 
 /** Anonymous session first, so the reading has an owner without a sign-up. */
@@ -85,6 +89,128 @@ function toBirthDate(birth: {
     };
 }
 
+/** What the birth step says, per reading: why each field is asked. */
+const BIRTH_COPY: Record<
+    ReadingTopic,
+    { title: string; help: string; knownHelp: string }
+> = {
+    amor: {
+        title: "¿Cuándo naciste?",
+        help: "Con la fecha basta. Si sabes la hora, tu Luna queda exacta.",
+        knownHelp:
+            "El día y el mes ya nos los diste. Con el año ubicamos tu Venus y tu Marte; con la hora, si la sabes, tu Luna queda exacta.",
+    },
+    compatibilidad: {
+        title: "¿Cuándo nacieron?",
+        help: "Con las dos fechas cruzamos sus cartas. Si saben la hora, sus Lunas quedan exactas.",
+        knownHelp:
+            "Tu día y tu mes ya nos los diste. Con los años cruzamos sus cartas; con la hora, si la saben, sus Lunas quedan exactas.",
+    },
+    personalidad: {
+        title: "¿Cuándo y dónde naciste?",
+        help: "Tu Ascendente cambia de signo cada dos horas y depende del lugar: por eso la hora y la ciudad.",
+        knownHelp:
+            "El día y el mes ya nos los diste. Tu Ascendente cambia de signo cada dos horas y depende del lugar: por eso la hora y la ciudad.",
+    },
+    camino: {
+        title: "¿Cuándo naciste?",
+        help: "Con la fecha vemos qué tocan Saturno y Júpiter en tu carta este año. Si sabes la hora, también tu Luna.",
+        knownHelp:
+            "El día y el mes ya nos los diste. Con el año vemos qué tocan Saturno y Júpiter en tu carta; con la hora, si la sabes, también tu Luna.",
+    },
+};
+
+/** Who the other person is, as their answers named them. */
+const THEM: Record<string, string> = {
+    pareja: "Tu pareja",
+    gusta: "Esa persona",
+    sin_nombre: "Esa persona",
+    ex: "Tu ex",
+};
+
+interface DateValue {
+    day: string;
+    month: string;
+    year: string;
+}
+
+/** Day, month and year: two lists and the year typed. */
+function DateFields({
+    id,
+    legend,
+    value,
+    onChange,
+    yearRef,
+}: {
+    id: string;
+    legend: string;
+    value: DateValue;
+    onChange: (value: Partial<DateValue>) => void;
+    yearRef?: React.Ref<HTMLInputElement>;
+}) {
+    return (
+        <fieldset className="grid grid-cols-[4.5rem_1fr_5.5rem] gap-3">
+            <legend className="sr-only">{legend}</legend>
+            <div className="flex flex-col gap-2">
+                <Label htmlFor={`${id}-day`}>Día</Label>
+                <Select
+                    value={value.day}
+                    onValueChange={(day) => onChange({ day })}
+                >
+                    <SelectTrigger
+                        id={`${id}-day`}
+                        className="w-full font-mono"
+                    >
+                        <SelectValue placeholder="--" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {DAYS.map((d) => (
+                            <SelectItem key={d} value={d} className="font-mono">
+                                {d.padStart(2, "0")}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+                <Label htmlFor={`${id}-month`}>Mes</Label>
+                <Select
+                    value={value.month}
+                    onValueChange={(month) => onChange({ month })}
+                >
+                    <SelectTrigger id={`${id}-month`} className="w-full">
+                        <SelectValue placeholder="Mes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {MONTHS_ES.map((name, i) => (
+                            <SelectItem key={name} value={String(i + 1)}>
+                                {name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+                <Label htmlFor={`${id}-year`}>Año</Label>
+                <Input
+                    id={`${id}-year`}
+                    ref={yearRef}
+                    inputMode="numeric"
+                    autoComplete={id === "birth" ? "bday-year" : "off"}
+                    placeholder="1995"
+                    maxLength={4}
+                    required
+                    className="font-mono"
+                    value={value.year}
+                    onChange={(e) =>
+                        onChange({ year: e.target.value.replace(/\D/g, "") })
+                    }
+                />
+            </div>
+        </fieldset>
+    );
+}
+
 export function QuizFlow({
     topic,
     questions,
@@ -106,6 +232,15 @@ export function QuizFlow({
         time: "",
         place: "",
     });
+    /** Compatibility: the other person's birth. */
+    const [partner, setPartner] = useState({
+        day: "",
+        month: "",
+        year: "",
+        time: "",
+    });
+    /** Personality: the birthplace picked from the list. */
+    const [place, setPlace] = useState<Place | null>(null);
     const yearRef = useRef<HTMLInputElement>(null);
     const [submitting, setSubmitting] = useState(false);
     /** Their chart, drawn while the hook is being written. */
@@ -137,6 +272,7 @@ export function QuizFlow({
 
     function answer(given: QuizAnswer) {
         track("quiz_answer", {
+            topic,
             question: given.questionId,
             answer:
                 "optionId" in given ? given.optionId : given.ranking.join(">"),
@@ -163,27 +299,49 @@ export function QuizFlow({
             toast.error(birthDate.error);
             return;
         }
+        let partnerBirth: CreateReading["partner"];
+        if (topic === "compatibilidad") {
+            const date = toBirthDate(partner);
+            if ("error" in date) {
+                const message = date.error.replace("tu fecha", "su fecha");
+                track("quiz_error", { message });
+                toast.error(message);
+                return;
+            }
+            partnerBirth = {
+                birthDate: date.date,
+                birthTime: partner.time || undefined,
+            };
+        }
         const parsed = createReadingSchema.safeParse({
             topic,
             birthDate: birthDate.date,
             birthTime: birth.time || undefined,
-            birthTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            birthPlace: birth.place.trim() || undefined,
+            // Their birthplace's zone if they picked it; else the browser's.
+            birthTimeZone:
+                place?.timeZone ??
+                Intl.DateTimeFormat().resolvedOptions().timeZone,
+            birthPlace: place?.label ?? (birth.place.trim() || undefined),
+            birthLatitude: place?.latitude,
+            birthLongitude: place?.longitude,
+            partner: partnerBirth,
             answers,
         });
         if (!parsed.success) {
-            track("quiz_error", {
-                message: parsed.error.issues[0]?.message ?? "invalid",
-            });
-            toast.error(
-                parsed.error.issues[0]?.message ??
-                    "Revisa tus datos de nacimiento",
-            );
+            const issue = parsed.error.issues[0];
+            // The age rule speaks to them; said of the other person, it's theirs.
+            const message =
+                issue?.path[0] === "partner"
+                    ? `Esa persona también debe tener al menos ${PRIVACY_COMMITMENTS.minimumAge} años`
+                    : (issue?.message ?? "Revisa tus datos de nacimiento");
+            track("quiz_error", { message });
+            toast.error(message);
             return;
         }
         track("quiz_submit", {
             time: Boolean(birth.time),
-            place: Boolean(birth.place.trim()),
+            place: Boolean(place || birth.place.trim()),
+            ...(partnerBirth && { partnerTime: Boolean(partner.time) }),
             ms: Date.now() - shownAt.current,
         });
         const chart = natalChart(
@@ -227,6 +385,7 @@ export function QuizFlow({
                 chart={revealing.chart}
                 birthDate={revealing.birthDate}
                 mode="teaser"
+                topic={topic}
             />
         );
 
@@ -309,122 +468,132 @@ export function QuizFlow({
                 <form onSubmit={submit} className="flex flex-col gap-6">
                     <div>
                         <h2 className="text-pretty font-display text-3xl sm:text-4xl">
-                            {knownBirthDay
+                            {knownBirthDay &&
+                            (topic === "amor" || topic === "camino")
                                 ? "Solo falta el año"
-                                : "¿Cuándo naciste?"}
+                                : BIRTH_COPY[topic].title}
                         </h2>
                         <p className="mt-2 text-muted-foreground text-sm">
                             {knownBirthDay
-                                ? "El día y el mes ya nos los diste. Con el año ubicamos tu Venus y tu Marte; con la hora, si la sabes, tu Luna queda exacta."
-                                : "Con la fecha basta. Si sabes la hora, tu Luna queda exacta."}
+                                ? BIRTH_COPY[topic].knownHelp
+                                : BIRTH_COPY[topic].help}
                         </p>
                     </div>
-                    <fieldset className="grid grid-cols-[4.5rem_1fr_5.5rem] gap-3">
-                        <legend className="sr-only">Fecha de nacimiento</legend>
-                        <div className="flex flex-col gap-2">
-                            <Label htmlFor="birth-day">Día</Label>
-                            <Select
-                                value={birth.day}
-                                onValueChange={(day) =>
-                                    setBirth({ ...birth, day })
-                                }
-                            >
-                                <SelectTrigger
-                                    id="birth-day"
-                                    className="w-full font-mono"
-                                >
-                                    <SelectValue placeholder="--" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {DAYS.map((d) => (
-                                        <SelectItem
-                                            key={d}
-                                            value={d}
-                                            className="font-mono"
-                                        >
-                                            {d.padStart(2, "0")}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <Label htmlFor="birth-month">Mes</Label>
-                            <Select
-                                value={birth.month}
-                                onValueChange={(month) =>
-                                    setBirth({ ...birth, month })
-                                }
-                            >
-                                <SelectTrigger
-                                    id="birth-month"
-                                    className="w-full"
-                                >
-                                    <SelectValue placeholder="Mes" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {MONTHS_ES.map((name, i) => (
-                                        <SelectItem
-                                            key={name}
-                                            value={String(i + 1)}
-                                        >
-                                            {name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <Label htmlFor="birth-year">Año</Label>
-                            <Input
-                                id="birth-year"
-                                ref={yearRef}
-                                inputMode="numeric"
-                                autoComplete="bday-year"
-                                placeholder="1995"
-                                maxLength={4}
-                                required
-                                className="font-mono"
-                                value={birth.year}
-                                onChange={(e) =>
-                                    setBirth({
-                                        ...birth,
-                                        year: e.target.value.replace(/\D/g, ""),
-                                    })
-                                }
-                            />
-                        </div>
-                    </fieldset>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="flex flex-col gap-2">
-                            <Label htmlFor="birth-time">Hora (opcional)</Label>
-                            <Input
-                                id="birth-time"
-                                type="time"
-                                value={birth.time}
-                                onChange={(e) =>
-                                    setBirth({ ...birth, time: e.target.value })
-                                }
-                            />
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <Label htmlFor="birth-place">
-                                Ciudad (opcional)
-                            </Label>
-                            <Input
-                                id="birth-place"
-                                maxLength={120}
-                                placeholder="Lima"
-                                value={birth.place}
-                                onChange={(e) =>
-                                    setBirth({
-                                        ...birth,
-                                        place: e.target.value,
-                                    })
-                                }
-                            />
+                    <div className="flex flex-col gap-4">
+                        {topic === "compatibilidad" && (
+                            <h3 className="font-mono text-[11px] text-astral-gold uppercase tracking-[0.16em]">
+                                Tú
+                            </h3>
+                        )}
+                        <DateFields
+                            id="birth"
+                            legend="Fecha de nacimiento"
+                            value={birth}
+                            onChange={(date) => setBirth({ ...birth, ...date })}
+                            yearRef={yearRef}
+                        />
+                        <div
+                            className={
+                                topic === "personalidad" ||
+                                topic === "compatibilidad"
+                                    ? "flex flex-col gap-4"
+                                    : "grid gap-4 sm:grid-cols-2"
+                            }
+                        >
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="birth-time">
+                                    {topic === "personalidad"
+                                        ? "Hora"
+                                        : "Hora (opcional)"}
+                                </Label>
+                                <Input
+                                    id="birth-time"
+                                    type="time"
+                                    required={topic === "personalidad"}
+                                    value={birth.time}
+                                    onChange={(e) =>
+                                        setBirth({
+                                            ...birth,
+                                            time: e.target.value,
+                                        })
+                                    }
+                                />
+                                {topic === "personalidad" && (
+                                    <p className="text-muted-foreground text-xs">
+                                        Está en tu partida de nacimiento. Si no
+                                        la tienes, pregúntale a tu familia.
+                                    </p>
+                                )}
+                            </div>
+                            {topic === "personalidad" ? (
+                                <div className="flex flex-col gap-2">
+                                    <Label htmlFor="birth-place">
+                                        Ciudad donde naciste
+                                    </Label>
+                                    <PlaceSearch
+                                        id="birth-place"
+                                        place={place}
+                                        onPlace={setPlace}
+                                    />
+                                </div>
+                            ) : (
+                                topic !== "compatibilidad" && (
+                                    <div className="flex flex-col gap-2">
+                                        <Label htmlFor="birth-place">
+                                            Ciudad (opcional)
+                                        </Label>
+                                        <Input
+                                            id="birth-place"
+                                            maxLength={120}
+                                            placeholder="Lima"
+                                            value={birth.place}
+                                            onChange={(e) =>
+                                                setBirth({
+                                                    ...birth,
+                                                    place: e.target.value,
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                )
+                            )}
                         </div>
                     </div>
+                    {topic === "compatibilidad" && (
+                        <div className="flex flex-col gap-4">
+                            <h3 className="font-mono text-[11px] text-astral-gold uppercase tracking-[0.16em]">
+                                {THEM[chosen(answers, "vinculo") ?? ""] ??
+                                    "Esa persona"}
+                            </h3>
+                            <DateFields
+                                id="partner"
+                                legend="Su fecha de nacimiento"
+                                value={partner}
+                                onChange={(date) =>
+                                    setPartner({ ...partner, ...date })
+                                }
+                            />
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="partner-time">
+                                    Su hora (opcional)
+                                </Label>
+                                <Input
+                                    id="partner-time"
+                                    type="time"
+                                    value={partner.time}
+                                    onChange={(e) =>
+                                        setPartner({
+                                            ...partner,
+                                            time: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+                            <p className="text-muted-foreground text-xs">
+                                Su fecha se usa solo para esta lectura.
+                            </p>
+                        </div>
+                    )}
                     <GoldButton
                         type="submit"
                         size="lg"

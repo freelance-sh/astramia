@@ -3,7 +3,6 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { ZODIAC_SIGNS } from "@/core/landing/domain/zodiac";
-import type { StoryBody } from "@/core/reading/domain/story";
 import { CONSTELLATIONS } from "../story/constellations";
 
 /** One constellation: it forms, holds a moment, and gives way to the next. */
@@ -19,7 +18,8 @@ const LINES_IN = 2.2;
 export function FormingSky({
     skies,
 }: {
-    skies: readonly { body: StoryBody; sign: string }[];
+    /** "Venus", "Tu Luna", "Ascendente": what's in that sign. */
+    skies: readonly { body: string; sign: string }[];
 }) {
     const reducedMotion = useReducedMotion();
     const [turn, setTurn] = useState(0);

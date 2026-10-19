@@ -4,7 +4,11 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { ShimmerText } from "@/core/landing/client/effects";
 import { longDate } from "@/core/reading/domain/chart";
-import type { AspectName, NatalChart } from "@/core/reading/domain/types";
+import type {
+    AspectName,
+    NatalChart,
+    ReadingTopic,
+} from "@/core/reading/domain/types";
 import { NatalWheel, WHEEL_DRAW_STEPS } from "./natal-wheel";
 
 /**
@@ -30,32 +34,61 @@ function captions(
     chart: NatalChart,
     birthDate: string,
     mode: "teaser" | "reading",
+    topic: ReadingTopic,
 ): string[] {
     const [sun, moon, venus, mars] = chart.placements;
-    const lines = [
-        `Trazando el cielo del ${longDate(birthDate)}`,
-        `Venus en ${venus.sign}: cómo amas`,
-        chart.moonRange
-            ? `Tu Luna, entre ${chart.moonRange.early} y ${chart.moonRange.late}`
-            : `Tu Luna en ${moon.sign}`,
-        `Marte en ${mars.sign}: cómo deseas`,
-        `Tu Sol en ${sun.sign}`,
-    ];
+    const moonLine = chart.moonRange
+        ? `Tu Luna, entre ${chart.moonRange.early} y ${chart.moonRange.late}`
+        : `Tu Luna en ${moon.sign}`;
     const aspect = chart.aspects[0];
-    lines.push(
-        aspect
-            ? `${ASPECT_ARTICLE[aspect.name]} entre tu ${aspect.a} y tu ${aspect.b}`
-            : "Uniendo los hilos de tu carta",
-    );
-    lines.push(
-        mode === "reading"
-            ? "Siguiendo a Venus en los próximos meses"
-            : "Buscando lo que tu carta repite",
-    );
-    lines.push(
-        mode === "reading" ? "Escribiendo tu lectura" : "Leyendo tu carta",
-    );
-    return lines;
+    const aspectLine = aspect
+        ? `${ASPECT_ARTICLE[aspect.name]} entre tu ${aspect.a} y tu ${aspect.b}`
+        : "Uniendo los hilos de tu carta";
+    const first = `Trazando el cielo del ${longDate(birthDate)}`;
+    switch (topic) {
+        case "compatibilidad":
+            return [
+                first,
+                `Tu Venus en ${venus.sign}`,
+                "Trazando el cielo del día en que nació esa persona",
+                "Cruzando las dos cartas",
+                "Buscando dónde fluyen y dónde chocan",
+                "Leyendo lo que hay entre ustedes",
+            ];
+        case "personalidad":
+            return [
+                first,
+                `Tu Sol en ${sun.sign}: quién eres`,
+                moonLine,
+                "Buscando qué signo salía por el este",
+                aspectLine,
+                "Leyendo quién eres",
+            ];
+        case "camino":
+            return [
+                first,
+                `Tu Sol en ${sun.sign}`,
+                "Ubicando a Saturno y Júpiter hoy",
+                "Midiendo qué tocan en tu carta",
+                "Buscando las fechas de tu año",
+                "Leyendo tu momento",
+            ];
+        default:
+            return [
+                first,
+                `Venus en ${venus.sign}: cómo amas`,
+                moonLine,
+                `Marte en ${mars.sign}: cómo deseas`,
+                `Tu Sol en ${sun.sign}`,
+                aspectLine,
+                mode === "reading"
+                    ? "Siguiendo a Venus en los próximos meses"
+                    : "Buscando lo que tu carta repite",
+                mode === "reading"
+                    ? "Escribiendo tu lectura"
+                    : "Leyendo tu carta",
+            ];
+    }
 }
 
 /**
@@ -68,15 +101,17 @@ export function ChartReveal({
     chart,
     birthDate,
     mode,
+    topic = "amor",
 }: {
     chart: NatalChart;
     birthDate: string;
     mode: "teaser" | "reading";
+    topic?: ReadingTopic;
 }) {
     const reducedMotion = useReducedMotion();
     const lines = useMemo(
-        () => captions(chart, birthDate, mode),
-        [chart, birthDate, mode],
+        () => captions(chart, birthDate, mode, topic),
+        [chart, birthDate, mode, topic],
     );
     const last = lines.length - 1;
     const [step, setStep] = useState(0);

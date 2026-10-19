@@ -3,6 +3,8 @@ import { getLogger } from "@logtape/logtape";
 import { after } from "next/server";
 import type { CheckoutResponse } from "@/core/payment/domain/types";
 import { createCheckoutService } from "@/core/payment/server/services/create-checkout-service";
+import { planFor } from "@/core/reading/domain/plans";
+import { CHAT_LIMITS } from "@/core/reading/domain/schemas";
 import { CONTINUE_ANCHOR } from "@/core/reading/domain/story";
 import { isOwner } from "@/server/auth/owner";
 import {
@@ -56,6 +58,7 @@ export async function startReadingCheckoutService(
             origin,
             // Anonymous accounts carry a placeholder address; let the gateway ask.
             payerEmail: user.isAnonymous ? undefined : user.email,
+            title: `Lectura ${planFor(row.topic).of} + ${CHAT_LIMITS.hours} horas de chat`,
         });
         // Start writing while they pay: the checkout hides the model's ~30 s.
         if (checkout.ok)

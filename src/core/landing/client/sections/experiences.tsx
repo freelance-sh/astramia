@@ -8,7 +8,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/frontend/components/ui/card";
-import { EXPERIENCES, START_READING_HREF } from "../../domain/content";
+import { EXPERIENCES, readingHref } from "../../domain/content";
 import { Reveal, TiltCard } from "../effects";
 import { SectionIntro } from "./section-intro";
 
@@ -26,12 +26,12 @@ export function Experiences() {
                     label="Lecturas"
                     title={
                         <>
-                            Una lectura hoy.{" "}
-                            <em className="text-astral-gold">Tres</em> en
-                            camino.
+                            Una carta.{" "}
+                            <em className="text-astral-gold">Cuatro</em>{" "}
+                            lecturas.
                         </>
                     }
-                    description="Empezamos por la pregunta que más nos llega. Las otras tres se abren cuando estén a la altura."
+                    description="Empieza por la pregunta que te trae hoy. Cada lectura mira tu carta desde otro lado, con sus propias preguntas."
                 />
             </Reveal>
 
@@ -66,7 +66,7 @@ export function Experiences() {
                                 variant="link"
                                 className="group h-auto px-0 text-base"
                             >
-                                <Link href={START_READING_HREF}>
+                                <Link href={readingHref(featured.id)}>
                                     Empezar mi lectura
                                     <ArrowRight className="transition-transform group-hover:translate-x-1" />
                                 </Link>
@@ -78,30 +78,29 @@ export function Experiences() {
                 <Reveal delay={0.1} className="lg:col-span-5">
                     <ol className="divide-y divide-astral-ink border-astral-ink border-y">
                         {upcoming.map((experience) => (
-                            <li
-                                key={experience.id}
-                                className="grid grid-cols-[3rem_1fr_auto] items-baseline gap-4 py-6"
-                            >
-                                <span className="font-display text-2xl text-astral-gold/70">
-                                    {experience.numeral}
-                                </span>
-                                <div className="flex flex-col gap-1.5">
-                                    <h3 className="font-display text-2xl leading-tight">
-                                        {experience.title}
-                                    </h3>
-                                    <p className="text-pretty text-muted-foreground text-sm">
-                                        {experience.description}
-                                    </p>
-                                    <p className="font-mono text-[11px] text-muted-foreground/70 uppercase tracking-[0.2em]">
-                                        {experience.anchor}
-                                    </p>
-                                </div>
-                                <Badge
-                                    variant="outline"
-                                    className="self-start font-mono text-[10px] uppercase tracking-[0.14em]"
+                            <li key={experience.id}>
+                                <Link
+                                    href={readingHref(experience.id)}
+                                    className="group grid grid-cols-[3rem_1fr_auto] items-baseline gap-4 py-6"
                                 >
-                                    Pronto
-                                </Badge>
+                                    <span className="font-display text-2xl text-astral-gold/70">
+                                        {experience.numeral}
+                                    </span>
+                                    <div className="flex flex-col gap-1.5">
+                                        <h3 className="font-display text-2xl leading-tight transition-colors group-hover:text-astral-gold">
+                                            {experience.title}
+                                        </h3>
+                                        <p className="text-pretty text-muted-foreground text-sm">
+                                            {experience.description}
+                                        </p>
+                                        <p className="font-mono text-[11px] text-muted-foreground/70 uppercase tracking-[0.2em]">
+                                            {experience.anchor}
+                                            {experience.needs &&
+                                                ` · ${experience.needs}`}
+                                        </p>
+                                    </div>
+                                    <ArrowRight className="size-5 self-center text-astral-gold transition-transform group-hover:translate-x-1" />
+                                </Link>
                             </li>
                         ))}
                     </ol>

@@ -30,6 +30,7 @@ export async function listReadingsService(
         return ok(
             rows.map((row) => ({
                 id: row.id,
+                topic: row.topic,
                 sunSign: row.sunSign,
                 unlocked: row.unlockedAt !== null,
                 createdAt: row.createdAt.toISOString(),
