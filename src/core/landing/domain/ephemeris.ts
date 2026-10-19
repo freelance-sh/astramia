@@ -2,9 +2,10 @@
  * Low-precision ephemeris for the landing's "cielo de hoy" strip.
  *
  * Sun and Moon follow the truncated series in Meeus, *Astronomical
- * Algorithms* (ch. 25 and 47); Venus and Mars use JPL's approximate
- * Keplerian elements (valid 1800–2050). Accuracy is well under 1°, which is
- * all a sign/degree readout needs. Pure and side-effect free.
+ * Algorithms* (ch. 25 and 47); the planets use JPL's approximate Keplerian
+ * elements (valid 1800–2050), brought to the equinox of date. Against JPL's
+ * DE421 over 1930–2045: Sun 0.01°, Moon 0.1°, planets ≲0.2°. Pure and
+ * side-effect free.
  */
 
 import { longitudeToSign, type SignPosition } from "./zodiac";
@@ -99,6 +100,60 @@ const MARS: KeplerElements = {
     node: [49.55953891, -0.29257343],
 };
 
+const MERCURY: KeplerElements = {
+    a: [0.38709927, 0.00000037],
+    e: [0.20563593, 0.00001906],
+    i: [7.00497902, -0.00594749],
+    L: [252.2503235, 149472.67411175],
+    peri: [77.45779628, 0.16047689],
+    node: [48.33076593, -0.12534081],
+};
+
+const JUPITER: KeplerElements = {
+    a: [5.202887, -0.00011607],
+    e: [0.04838624, -0.00013253],
+    i: [1.30439695, -0.00183714],
+    L: [34.39644051, 3034.74612775],
+    peri: [14.72847983, 0.21252668],
+    node: [100.47390909, 0.20469106],
+};
+
+const SATURN: KeplerElements = {
+    a: [9.53667594, -0.0012506],
+    e: [0.05386179, -0.00050991],
+    i: [2.48599187, 0.00193609],
+    L: [49.95424423, 1222.49362201],
+    peri: [92.59887831, -0.41897216],
+    node: [113.66242448, -0.28867794],
+};
+
+const URANUS: KeplerElements = {
+    a: [19.18916464, -0.00196176],
+    e: [0.04725744, -0.00004397],
+    i: [0.77263783, -0.00242939],
+    L: [313.23810451, 428.48202785],
+    peri: [170.9542763, 0.40805281],
+    node: [74.01692503, 0.04240589],
+};
+
+const NEPTUNE: KeplerElements = {
+    a: [30.06992276, 0.00026291],
+    e: [0.00859048, 0.00005105],
+    i: [1.77004347, 0.00035372],
+    L: [-55.12002969, 218.45945325],
+    peri: [44.96476227, -0.32241464],
+    node: [131.78422574, -0.00508664],
+};
+
+const PLUTO: KeplerElements = {
+    a: [39.48211675, -0.00031596],
+    e: [0.2488273, 0.0000517],
+    i: [17.14001206, 0.00004818],
+    L: [238.92903833, 145.20780515],
+    peri: [224.06891629, -0.04062942],
+    node: [110.30393684, -0.01183482],
+};
+
 interface Vec3 {
     x: number;
     y: number;
@@ -145,16 +200,56 @@ function heliocentric(el: KeplerElements, T: number): Vec3 {
     };
 }
 
+/**
+ * Geocentric longitude of date, as the zodiac counts it: the elements give
+ * it against the equinox of 2000, which precession moves 1.4° a century
+ * (half a degree for someone born in 1965).
+ */
 function geocentricLongitude(el: KeplerElements, jd: number): number {
     const T = centuries(jd);
     const planet = heliocentric(el, T);
     const earth = heliocentric(EARTH, T);
     const lon = Math.atan2(planet.y - earth.y, planet.x - earth.x) / DEG;
-    return norm360(lon);
+    return norm360(lon + 1.396971 * T + 0.0003086 * T * T);
 }
 
 export const venusLongitude = (jd: number) => geocentricLongitude(VENUS, jd);
 export const marsLongitude = (jd: number) => geocentricLongitude(MARS, jd);
+export const mercuryLongitude = (jd: number) =>
+    geocentricLongitude(MERCURY, jd);
+export const jupiterLongitude = (jd: number) =>
+    geocentricLongitude(JUPITER, jd);
+export const saturnLongitude = (jd: number) => geocentricLongitude(SATURN, jd);
+export const uranusLongitude = (jd: number) => geocentricLongitude(URANUS, jd);
+export const neptuneLongitude = (jd: number) =>
+    geocentricLongitude(NEPTUNE, jd);
+export const plutoLongitude = (jd: number) => geocentricLongitude(PLUTO, jd);
+
+/** Greenwich mean sidereal time, degrees (Meeus 12.4). */
+export function siderealTime(jd: number): number {
+    const T = centuries(jd);
+    return norm360(
+        280.46061837 +
+            360.98564736629 * (jd - J2000) +
+            0.000387933 * T * T -
+            (T * T * T) / 38710000,
+    );
+}
+
+/**
+ * The degree of the zodiac rising on the eastern horizon at that instant
+ * and place: the Ascendant. Latitude north and longitude east positive.
+ * It moves a sign every two hours or so: the birth time matters.
+ */
+export function ascendant(jd: number, latitude: number, longitude: number) {
+    const ramc = norm360(siderealTime(jd) + longitude);
+    const eps = 23.439291 - 0.0130042 * centuries(jd);
+    const asc = Math.atan2(
+        cos(ramc),
+        -(sin(ramc) * cos(eps) + Math.tan(latitude * DEG) * sin(eps)),
+    );
+    return norm360(asc / DEG);
+}
 
 /** A point in the plane of the ecliptic, in AU, the Sun at the origin. */
 export interface OrbitPoint {

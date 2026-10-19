@@ -1,10 +1,17 @@
 import {
+    ascendant,
     julianDay,
+    jupiterLongitude,
     marsLongitude,
+    mercuryLongitude,
     moonLongitude,
     moonPhase,
+    neptuneLongitude,
     orbitPositions,
+    plutoLongitude,
+    saturnLongitude,
     sunLongitude,
+    uranusLongitude,
     venusLongitude,
 } from "@/core/landing/domain/ephemeris";
 import {
@@ -72,7 +79,11 @@ function utcOffsetMinutes(timeZone: string, instant: number): number {
 }
 
 /** When a wall-clock date and time in `timeZone` happened. */
-function localInstant(birthDate: string, time: string, timeZone: string): Date {
+export function localInstant(
+    birthDate: string,
+    time: string,
+    timeZone: string,
+): Date {
     const [hours, minutes] = time.split(":").map(Number);
     const [y, m, d] = birthDate.split("-").map(Number);
     const zone = isTimeZone(timeZone) ? timeZone : DEFAULT_TIME_ZONE;
@@ -110,6 +121,108 @@ export function natalPlacements(
     ];
 }
 
+/** Every body a reading may use, the Sun to Pluto. */
+export const BODIES = [
+    "Sol",
+    "Luna",
+    "Mercurio",
+    "Venus",
+    "Marte",
+    "Júpiter",
+    "Saturno",
+    "Urano",
+    "Neptuno",
+    "Plutón",
+] as const;
+export type Body = (typeof BODIES)[number];
+
+const LONGITUDE: Record<Body, (jd: number) => number> = {
+    Sol: sunLongitude,
+    Luna: moonLongitude,
+    Mercurio: mercuryLongitude,
+    Venus: venusLongitude,
+    Marte: marsLongitude,
+    Júpiter: jupiterLongitude,
+    Saturno: saturnLongitude,
+    Urano: uranusLongitude,
+    Neptuno: neptuneLongitude,
+    Plutón: plutoLongitude,
+};
+
+/** Where these bodies were at a Julian day. */
+export function placementsAt(
+    jd: number,
+    bodies: readonly Body[] = BODIES,
+): NatalPlacement[] {
+    return bodies.map((body) => placement(body, LONGITUDE[body](jd)));
+}
+
+/** Bodies at birth (noon without a time), for the readings past love. */
+export function birthPlacements(
+    birth: { birthDate: string; birthTime: string | null },
+    timeZone: string | null,
+    bodies: readonly Body[] = BODIES,
+): NatalPlacement[] {
+    const jd = julianDay(
+        localInstant(
+            birth.birthDate,
+            birth.birthTime ?? "12:00",
+            timeZone ?? DEFAULT_TIME_ZONE,
+        ),
+    );
+    return placementsAt(jd, bodies);
+}
+
+/**
+ * The traditional ruler of each sign: the body an Ascendant in it "follows"
+ * (the modern Pluto, Uranus and Neptune move too slowly to say anything
+ * personal).
+ */
+export const RULERS: Record<string, Body> = {
+    Aries: "Marte",
+    Tauro: "Venus",
+    Géminis: "Mercurio",
+    Cáncer: "Luna",
+    Leo: "Sol",
+    Virgo: "Mercurio",
+    Libra: "Venus",
+    Escorpio: "Marte",
+    Sagitario: "Júpiter",
+    Capricornio: "Saturno",
+    Acuario: "Saturno",
+    Piscis: "Júpiter",
+};
+
+export interface Rising extends NatalPlacement {
+    /**
+     * The sign it would be with the birth time 20 minutes off, when that
+     * changes it: the Ascendant moves a sign every two hours or so.
+     */
+    near: string | null;
+}
+
+/** The Ascendant: the sign rising in the east where and when they were born. */
+export function risingSign(
+    birthDate: string,
+    birthTime: string,
+    timeZone: string,
+    latitude: number,
+    longitude: number,
+): Rising {
+    const instant = localInstant(birthDate, birthTime, timeZone).getTime();
+    const at = (minutes: number) =>
+        ascendant(
+            julianDay(new Date(instant + minutes * MINUTE_MS)),
+            latitude,
+            longitude,
+        );
+    const exact = placement("Ascendente", at(0));
+    const near = [at(-20), at(20)]
+        .map((l) => longitudeToSign(l).sign.name)
+        .find((sign) => sign !== exact.sign);
+    return { ...exact, near: near ?? null };
+}
+
 export function sunSignOf(birthDate: string): string {
     const [, m, d] = birthDate.split("-").map(Number);
     return getSunSign(m, d)?.name ?? "desconocido";
@@ -124,25 +237,35 @@ const ASPECTS: { name: AspectName; angle: number; orb: number }[] = [
     { name: "oposición", angle: 180, orb: 8 },
 ];
 
+/** Degrees between two longitudes, 0–180. */
+export function separation(a: number, b: number): number {
+    const diff = Math.abs(a - b) % 360;
+    return diff > 180 ? 360 - diff : diff;
+}
+
+/** The aspect two longitudes make within these orbs, if any. */
+export function aspectOf(
+    a: number,
+    b: number,
+    orbs: readonly { name: AspectName; angle: number; orb: number }[] = ASPECTS,
+): { name: AspectName; orb: number } | null {
+    const apart = separation(a, b);
+    const match = orbs.find((o) => Math.abs(apart - o.angle) <= o.orb);
+    return match
+        ? {
+              name: match.name,
+              orb: Math.round(Math.abs(apart - match.angle) * 10) / 10,
+          }
+        : null;
+}
+
 /** Aspects between every pair of placements, tightest first. */
 export function aspectsBetween(placements: NatalPlacement[]): Aspect[] {
     const found: Aspect[] = [];
     placements.forEach((p, i) => {
         for (const q of placements.slice(i + 1)) {
-            const diff = Math.abs(p.longitude - q.longitude) % 360;
-            const separation = diff > 180 ? 360 - diff : diff;
-            const match = ASPECTS.find(
-                (aspect) => Math.abs(separation - aspect.angle) <= aspect.orb,
-            );
-            if (match)
-                found.push({
-                    a: p.body,
-                    b: q.body,
-                    name: match.name,
-                    orb:
-                        Math.round(Math.abs(separation - match.angle) * 10) /
-                        10,
-                });
+            const match = aspectOf(p.longitude, q.longitude);
+            if (match) found.push({ a: p.body, b: q.body, ...match });
         }
     });
     return found.sort((x, y) => x.orb - y.orb);

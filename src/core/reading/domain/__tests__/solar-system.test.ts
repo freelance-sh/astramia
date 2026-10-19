@@ -70,8 +70,9 @@ describe("venusRoute", () => {
     const route = venusRoute(events);
 
     it("follows Venus day by day, a little past the last moment", () => {
-        expect(route?.venus).toHaveLength(52 + 12 + 1);
-        expect(route?.stops).toEqual([11, 32, 52]);
+        // Back in Scorpio on day 51 (4 December, as JPL has it).
+        expect(route?.venus).toHaveLength(51 + 12 + 1);
+        expect(route?.stops).toEqual([11, 32, 51]);
     });
 
     it("sees Venus in the sign each moment names, that day", () => {

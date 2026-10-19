@@ -102,14 +102,15 @@ describe("venusOutlook", () => {
                 date: "2026-11-15",
             },
             {
+                // JPL: back in Scorpio on 4 December, 04:00 in Lima.
                 when: "principios de diciembre",
                 text: "Venus entra en Escorpio",
                 kind: "entra",
                 sign: "Escorpio",
                 month: 11,
                 mine: [],
-                day: 52,
-                date: "2026-12-05",
+                day: 51,
+                date: "2026-12-04",
             },
         ]);
     });

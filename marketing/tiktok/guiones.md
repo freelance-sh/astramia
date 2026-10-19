@@ -43,11 +43,11 @@ Al generar:
 
 ## Escorpio · `escorpio` · ya grabado
 
-Vale hasta el 24 de octubre de 2026, 1 p. m. (Venus sale de Escorpio).
+Vale hasta el 24 de octubre de 2026 (Venus sale de Escorpio el 25 a las 5 a. m.).
 
-## Libra · `libra` · del 24 de octubre al 13 de noviembre de 2026
+## Libra · `libra` · del 25 de octubre al 13 de noviembre de 2026
 
-Venus, que rige Libra, entra retrógrada a Libra el 24 de octubre y se pone
+Venus, que rige Libra, entra retrógrada a Libra el 25 de octubre (5 a. m. en Lima) y se pone
 directa el 13 de noviembre (8 p. m. en Lima). Fuera de esas fechas el video
 dice algo falso.
 
