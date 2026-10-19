@@ -115,7 +115,43 @@ export function SignExplorer() {
                     </p>
                 </fieldset>
 
-                <div aria-live="polite" className="min-h-[5.5rem]">
+                <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                    <Magnetic className="w-full sm:w-auto">
+                        <GoldButton
+                            size="lg"
+                            asChild
+                            className="group h-12 w-full rounded-full px-7 text-base sm:w-auto"
+                        >
+                            <Link
+                                href={startReadingHref(
+                                    sign && !dayInvalid
+                                        ? {
+                                              day: Number(day),
+                                              month: Number(month),
+                                          }
+                                        : undefined,
+                                )}
+                            >
+                                {sign
+                                    ? HERO.ctaForSign(sign.name)
+                                    : HERO.ctaDefault}
+                                <ArrowRight className="transition-transform group-hover:translate-x-1" />
+                            </Link>
+                        </GoldButton>
+                    </Magnetic>
+                    <Button
+                        size="lg"
+                        variant="ghost"
+                        asChild
+                        className="h-12 rounded-full"
+                    >
+                        <a href="#como-funciona">Ver cómo funciona</a>
+                    </Button>
+                </div>
+
+                {/* Under the button: the sign that appears on the date they
+                    pick never pushes it below the fold. */}
+                <div aria-live="polite">
                     <AnimatePresence mode="wait">
                         {sign && (
                             <motion.div
@@ -166,40 +202,6 @@ export function SignExplorer() {
                             </motion.div>
                         )}
                     </AnimatePresence>
-                </div>
-
-                <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                    <Magnetic className="w-full sm:w-auto">
-                        <GoldButton
-                            size="lg"
-                            asChild
-                            className="group h-12 w-full rounded-full px-7 text-base sm:w-auto"
-                        >
-                            <Link
-                                href={startReadingHref(
-                                    sign && !dayInvalid
-                                        ? {
-                                              day: Number(day),
-                                              month: Number(month),
-                                          }
-                                        : undefined,
-                                )}
-                            >
-                                {sign
-                                    ? HERO.ctaForSign(sign.name)
-                                    : HERO.ctaDefault}
-                                <ArrowRight className="transition-transform group-hover:translate-x-1" />
-                            </Link>
-                        </GoldButton>
-                    </Magnetic>
-                    <Button
-                        size="lg"
-                        variant="ghost"
-                        asChild
-                        className="h-12 rounded-full"
-                    >
-                        <a href="#como-funciona">Ver cómo funciona</a>
-                    </Button>
                 </div>
             </div>
 
