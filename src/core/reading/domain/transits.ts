@@ -102,14 +102,17 @@ export function transitsAt(
     const found: (Transit & { rank: number })[] = [];
     now.forEach((planet, i) => {
         const body = planet.body as SlowBody;
-        const orbs = [
-            { name: "conjunción", angle: 0, orb: ORB[body] },
-            { name: "trígono", angle: 120, orb: ORB[body] },
-            { name: "cuadratura", angle: 90, orb: ORB[body] },
-            { name: "oposición", angle: 180, orb: ORB[body] },
-        ] as const;
         for (const point of natal) {
             if (!speaksTo(body, point)) continue;
+            // Its own cycle (a return, a square to itself) is a season, not a
+            // week: it's felt from further away.
+            const orb = ORB[body] + (point.body === body ? 3 : 0);
+            const orbs = [
+                { name: "conjunción", angle: 0, orb },
+                { name: "trígono", angle: 120, orb },
+                { name: "cuadratura", angle: 90, orb },
+                { name: "oposición", angle: 180, orb },
+            ] as const;
             const match = aspectOf(planet.longitude, point.longitude, orbs);
             // Its own cycle is marked by conjunction, square and opposition.
             if (!match || (point.body === body && match.name === "trígono"))
@@ -151,10 +154,12 @@ const ANGLES: readonly { name: AspectName; angle: number }[] = [
 
 /** How <cielo> says an exact hit: on a point of theirs, or its own cycle. */
 function exactText(body: SlowBody, natal: string, name: AspectName): string {
-    if (natal !== body) return `${body} en ${name} exacta con tu ${natal}`;
+    // "un trígono exacto", "una cuadratura exacta".
+    const exact = name === "trígono" || name === "sextil" ? "exacto" : "exacta";
+    if (natal !== body) return `${body} en ${name} ${exact} con tu ${natal}`;
     return name === "conjunción"
         ? `${body} vuelve exacto al lugar donde estaba cuando naciste (su retorno)`
-        : `${body} en ${name} exacta con el lugar donde estaba cuando naciste`;
+        : `${body} en ${name} ${exact} con el lugar donde estaba cuando naciste`;
 }
 
 /** Which of the person's points sit in `sign`, said for <cielo>. */

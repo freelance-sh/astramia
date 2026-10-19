@@ -19,6 +19,121 @@ import type { QuizAnswer } from "./types";
  * was about leaving their friends.
  */
 const CLUES: Record<string, Record<string, readonly string[]>> = {
+    // ---------- compatibility ----------
+    vinculo: {
+        pareja: [
+            "a ratos se pregunta si se conocen de verdad o si ya se acostumbraron",
+        ],
+        gusta: [
+            "lee cada señal de esa persona dos veces, buscando si significa algo",
+            "imagina cómo sería y le da un poco de miedo que sea tan bueno como imagina",
+        ],
+        sin_nombre: ["le cansa no saber qué son, y a la vez teme preguntarlo"],
+        ex: [
+            "todavía hay algo de esa historia que no termina de entender",
+            "a veces se pregunta si fue el momento o fueron las personas",
+        ],
+    },
+    conocen: {
+        poco: ["todo es nuevo: cada detalle todavía dice mucho"],
+        meses: [
+            "ya pasó la primera emoción; ahora empieza a ver lo que viene después",
+        ],
+        anio: ["ya conoce sus días buenos y sus días malos"],
+        anios: ["la historia es larga: hay cosas que ya no necesitan decirse"],
+    },
+    fluye: {
+        hablar: [
+            "las conversaciones largas le hacen sentir visto o vista como pocas cosas",
+        ],
+        quimica: [
+            "hay una atracción que no siempre sabe explicar con palabras",
+        ],
+        risa: ["reírse juntos le hace olvidar lo que en otro momento pesaría"],
+        calma: ["valora poder estar en silencio sin que nada se sienta raro"],
+    },
+    choca: {
+        discutir: ["después de discutir repasa lo que dijo y lo que no dijo"],
+        tiempos: [
+            "siente que uno de los dos siempre va más rápido o más lento",
+        ],
+        confianza: ["hay momentos en que duda, y le molesta dudar"],
+        futuro: [
+            "a veces piensa en lo que viene y no sabe si lo imaginan igual",
+        ],
+        mostrar: ["siente que quiere de una forma y le quieren de otra"],
+        casi_no: [
+            "que casi no choquen le da paz, y a ratos le hace preguntarse qué se callan",
+        ],
+        aun_no: ["todavía no sabe cómo sería el día a día con esa persona"],
+    },
+    // ---------- personality ----------
+    notan: {
+        energia: ["llena un lugar sin proponérselo, y a veces eso cansa"],
+        calma: ["los demás le buscan cuando algo se complica"],
+        humor: ["usa el humor también para no mostrar lo que le pesa"],
+        seriedad: [
+            "por dentro es más tierno o tierna de lo que parece por fuera",
+        ],
+        misterio: ["no le gusta explicar lo que siente hasta tenerlo claro"],
+    },
+    llegar: {
+        observo: ["lee el ambiente antes de mostrarse"],
+        saludo: ["prefiere romper el hielo antes de que el silencio pese"],
+        busco: ["con alguien conocido al lado se suelta mucho más"],
+        espero: ["le cuesta dar el primer paso, aunque tenga ganas de hablar"],
+    },
+    cuesta: {
+        ayuda: ["está acostumbrado o acostumbrada a resolver solo o sola"],
+        decir_no: ["dice que sí para no incomodar y luego carga con eso"],
+        quieto: ["descansar sin culpa todavía le cuesta"],
+        mostrar: ["siente mucho y lo cuenta poco"],
+        empezar: ["lo piensa tanto que a veces se le pasa el momento"],
+    },
+    oculto: {
+        pienso: ["repasa conversaciones horas después"],
+        sensible: ["una frase pequeña le puede acompañar todo el día"],
+        ganar: ["se exige más de lo que le exige nadie"],
+        dudas: [
+            "detrás de lo que muestra hay preguntas que no le cuenta a nadie",
+        ],
+        espacio: ["necesita tiempo a solas para volver a sentirse bien"],
+    },
+    // ---------- path ----------
+    momento: {
+        cambio: ["siente que algo se mueve aunque no sepa todavía hacia dónde"],
+        no_avanzo: [
+            "se compara con otros y le pesa sentirse en el mismo lugar",
+        ],
+        empezando: ["tiene ganas y algo de vértigo a la vez"],
+        cerrando: ["le cuesta soltar algo aunque sepa que ya terminó"],
+        perdida: ["tiene más preguntas que respuestas, y eso le inquieta"],
+    },
+    area: {
+        trabajo: ["lo que hace todos los días ya no le alcanza como antes"],
+        amor: ["lo que siente pide un lugar distinto en su vida"],
+        familia: [
+            "su lugar en la familia está cambiando, aunque nadie lo diga",
+        ],
+        casa: ["piensa en otro lugar donde vivir, o en otra forma de vivir"],
+        yo: ["siente que está dejando de ser quien era"],
+    },
+    pesa: {
+        incertidumbre: ["le gustaría saber al menos el siguiente paso"],
+        cansancio: ["lleva tiempo dando más de lo que recupera"],
+        decision: ["vuelve a esa decisión en los momentos tranquilos del día"],
+        atras: ["mira lo que hacen otros y siente que llega tarde"],
+        nada: ["está en un momento tranquilo, y quiere aprovecharlo bien"],
+    },
+    busco_etapa: {
+        claridad: [
+            "no necesita respuestas para todo: solo ver un poco más lejos",
+        ],
+        estabilidad: ["quiere algo firme donde apoyarse"],
+        cambio_real: ["está harto o harta de los cambios a medias"],
+        tiempo: ["necesita volver a tener tiempo para lo suyo"],
+        se_mueva: ["lleva tiempo esperando algo que no termina de llegar"],
+    },
     situacion: {
         soltera: [
             "disfruta su espacio y a ratos imagina a alguien que aún no existe",

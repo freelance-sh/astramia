@@ -94,6 +94,7 @@ export default async function SampleReadingPage({
             SAMPLE_READING,
             new Date(SAMPLE_READING.writtenAt),
         ).events,
+        facts: null,
         chatExpiresAt: null,
         createdAt: SAMPLE_READING.writtenAt,
     };

@@ -3,9 +3,16 @@ import type { MoonPhaseName } from "@/core/landing/domain/ephemeris";
 import type { Element } from "@/core/landing/domain/zodiac";
 import { PRIVACY_COMMITMENTS } from "@/core/legal/domain/policies";
 import { isTimeZone } from "./chart";
-import { isCompleteQuiz, QUIZ_LENGTH } from "./quiz";
+import type { ReadingFacts } from "./facts";
+import { isCompleteQuiz, quizLength } from "./quiz";
+import { QUIZZES } from "./quizzes";
 
-export const readingTopicSchema = z.enum(["amor"]);
+export const readingTopicSchema = z.enum([
+    "amor",
+    "compatibilidad",
+    "personalidad",
+    "camino",
+]);
 
 /** How long the chat stays open and how much it can be used. */
 export const CHAT_LIMITS = {
@@ -57,18 +64,58 @@ export const quizAnswerSchema = z.union([
     }),
 ]);
 
-export const createReadingSchema = z.object({
-    topic: readingTopicSchema,
+const timeSchema = z.iso.time({ precision: -1 });
+
+/** The other person, in a compatibility reading: their birth, as known. */
+export const partnerSchema = z.object({
     birthDate: birthDateSchema,
-    birthTime: z.iso.time({ precision: -1 }).optional(),
-    /** The browser's zone: most people answer from the country they were born in. */
-    birthTimeZone: z.string().max(64).refine(isTimeZone).optional(),
-    birthPlace: z.string().trim().min(2).max(120).optional(),
-    answers: z
-        .array(quizAnswerSchema)
-        .max(QUIZ_LENGTH)
-        .refine(isCompleteQuiz, "Respuestas inválidas"),
+    birthTime: timeSchema.optional(),
 });
+
+export const createReadingSchema = z
+    .object({
+        topic: readingTopicSchema,
+        birthDate: birthDateSchema,
+        birthTime: timeSchema.optional(),
+        /**
+         * The birthplace's zone when they picked it from the list; else the
+         * browser's (most people answer from the country they were born in).
+         */
+        birthTimeZone: z.string().max(64).refine(isTimeZone).optional(),
+        birthPlace: z.string().trim().min(2).max(120).optional(),
+        /** The birthplace picked from the list: what the Ascendant needs. */
+        birthLatitude: z.number().min(-90).max(90).optional(),
+        birthLongitude: z.number().min(-180).max(180).optional(),
+        partner: partnerSchema.optional(),
+        answers: z
+            .array(quizAnswerSchema)
+            .max(Math.max(...Object.values(QUIZZES).map((q) => quizLength(q)))),
+    })
+    .superRefine((input, ctx) => {
+        const issue = (path: string, message: string) =>
+            ctx.addIssue({ code: "custom", path: [path], message });
+        if (!isCompleteQuiz(input.answers, QUIZZES[input.topic]))
+            issue("answers", "Respuestas inválidas");
+        if (input.topic === "compatibilidad" && !input.partner)
+            issue("partner", "Falta la fecha de nacimiento de esa persona");
+        if (input.topic === "personalidad") {
+            if (!input.birthTime)
+                issue(
+                    "birthTime",
+                    "Para tu Ascendente necesitamos tu hora de nacimiento",
+                );
+            if (
+                input.birthLatitude === undefined ||
+                input.birthLongitude === undefined ||
+                !input.birthPlace ||
+                !input.birthTimeZone
+            )
+                issue(
+                    "birthPlace",
+                    "Elige tu ciudad de nacimiento de la lista",
+                );
+        }
+    });
 
 /*
  * Computed by `chart.ts` and handed to the prompts so the model interprets
@@ -166,6 +213,8 @@ export const readingSchema = z.object({
     question: z.string().nullable(),
     /** Venus after the reading was written (what its text talks about); empty while locked. */
     skyAhead: z.array(skyEventSchema),
+    /** The readings past love: the extra sky their scenes draw (`facts.ts`). */
+    facts: z.custom<ReadingFacts>().nullable(),
     chatExpiresAt: z.string().nullable(),
     createdAt: z.string(),
 });
@@ -195,13 +244,36 @@ export const chatTurnSchema = z.object({
 
 export const createdReadingSchema = z.object({ id: z.string() });
 
+/** A birthplace to pick from the list: what the Ascendant needs. */
+export const placeSchema = z.object({
+    /** "Arequipa, Perú". */
+    label: z.string(),
+    latitude: z.number(),
+    longitude: z.number(),
+    /** Its IANA zone: the birth time is read in it. */
+    timeZone: z.string(),
+});
+
+export const placeSearchSchema = z.object({
+    q: z.string().trim().min(2).max(80),
+});
+
 /** What the prompts know about the person (a reading row minus bookkeeping). */
 export const readingProfileSchema = z.object({
+    /** Which reading they asked for; the love one when absent. */
+    topic: readingTopicSchema.optional(),
     birthDate: z.string(),
     birthTime: z.string().nullable(),
     /** IANA zone of `birthTime`; `null` → the chart's default (Lima). */
     birthTimeZone: z.string().nullable(),
     birthPlace: z.string().nullable(),
+    birthLatitude: z.number().nullable().optional(),
+    birthLongitude: z.number().nullable().optional(),
+    /** The other person, in a compatibility reading. */
+    partner: z
+        .object({ birthDate: z.string(), birthTime: z.string().nullable() })
+        .nullable()
+        .optional(),
     answers: z.array(quizAnswerSchema),
 });
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ReadingFacts } from "./facts";
 import { MOON_PHASES, type SkyFacts } from "./sky-facts";
 import type { StoryVisual } from "./story";
 import type { ReadingTopic, SkyEvent } from "./types";
@@ -18,6 +19,8 @@ export interface SceneContext {
     question: string | null;
     /** <cielo>'s events: the months ahead. */
     skyAhead: readonly SkyEvent[];
+    /** The readings past love: their extra sky (`facts.ts`). */
+    facts: ReadingFacts | null;
 }
 
 /**
@@ -50,6 +53,7 @@ export interface PlanScene {
 }
 
 export interface ReadingPlan {
+    topic: ReadingTopic;
     /** What it reads about, after "lectura": "de amor". */
     of: string;
     /** What it should leave feeling understood: "su vida amorosa". */
@@ -75,10 +79,11 @@ export interface ReadingPlan {
  */
 export const CUT_MARK = "[corte]";
 
-const born = () => "El día que naciste";
+export const born = () => "El día que naciste";
 
 /** The love reading: how they love, what they need, their question, what's coming. */
 export const LOVE_PLAN: ReadingPlan = {
+    topic: "amor",
     of: "de amor",
     about: "su vida amorosa",
     example: `Para alguien con Venus en Acuario y Marte en Tauro (le gusta alguien que aún no lo sabe, se aleja cuando se pone serio, si tardan en responderle hace como si nada):
@@ -218,12 +223,6 @@ venusMars: Juntos, tu Venus y tu Marte hacen algo curioso. Empiezas con todo, y 
         brief: "una sola frase memorable que querría guardar.",
     },
 };
-
-export const PLANS: Record<ReadingTopic, ReadingPlan> = { amor: LOVE_PLAN };
-
-export function planFor(topic: ReadingTopic): ReadingPlan {
-    return PLANS[topic];
-}
 
 /** Every scene of a plan, in the order it's read. */
 export function scenesOf(plan: ReadingPlan): readonly PlanScene[] {

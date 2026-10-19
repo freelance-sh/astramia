@@ -7,6 +7,7 @@ import type {
     createReadingSchema,
     natalChartSchema,
     natalPlacementSchema,
+    placeSchema,
     quizAnswerSchema,
     readingBlockSchema,
     readingProfileSchema,
@@ -32,3 +33,4 @@ export type NatalChart = z.infer<typeof natalChartSchema>;
 export type SkyEvent = z.infer<typeof skyEventSchema>;
 export type VenusOutlook = z.infer<typeof venusOutlookSchema>;
 export type ReadingBlock = z.infer<typeof readingBlockSchema>;
+export type Place = z.infer<typeof placeSchema>;

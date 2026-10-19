@@ -1,7 +1,16 @@
 import { z } from "zod";
 import type { AiPurpose, AiReasoning } from "@/core/ai/domain/types";
-import { longDate, natalChart, readingOutlook } from "./chart";
+import { ageOn } from "./age";
+import {
+    aspectsBetween,
+    dominantElement,
+    longDate,
+    natalChart,
+    RULERS,
+    readingOutlook,
+} from "./chart";
 import { cluesFor } from "./clues";
+import { readingFacts } from "./facts";
 import {
     CUT_MARK,
     freeSchema,
@@ -11,8 +20,10 @@ import {
     type ReadingPlan,
 } from "./plan";
 import { describeAnswer, type Trato, tratoOf } from "./quiz";
+import { QUIZZES } from "./quizzes";
 import { freeAsText, readingAsText } from "./reading-content";
-import type { ReadingProfile } from "./types";
+import { SYNASTRY_BODIES } from "./synastry";
+import type { ReadingProfile, ReadingTopic } from "./types";
 
 /**
  * Prompt text for every model call. Pure (`today` is passed in), so the exact
@@ -40,7 +51,7 @@ export const AI_TASKS = {
     { maxOutputTokens: number; reasoning: AiReasoning }
 >;
 
-const SOUL = `Eres la voz de Astramia. Lees cartas natales con oficio y escribes como quien conoce a la persona hace años: con calidez, precisión y un poco de misterio. No adivinas: observas, y nombras con exactitud lo que la persona siente y nunca supo decir.
+const LOVE_SOUL = `Eres la voz de Astramia. Lees cartas natales con oficio y escribes como quien conoce a la persona hace años: con calidez, precisión y un poco de misterio. No adivinas: observas, y nombras con exactitud lo que la persona siente y nunca supo decir.
 
 <público>
 Escribes para todo el mundo, no para quien sabe astrología: alguien de 20 años que llegó desde TikTok y nunca leyó una carta natal. Lee en el celular, entre video y video, y se distrae rápido: tiene que entender cada frase a la primera, sin releer. La persona y su vida van primero; la astrología es el porqué, dicho con palabras de todos los días.
@@ -121,9 +132,10 @@ const TRATO: Record<Trato, string> = {
 /** <trato> and <respuestas>: how to address them, and what they told. */
 function describeAnswers(profile: ReadingProfile): string {
     const trato = tratoOf(profile.answers);
+    const quiz = QUIZZES[profile.topic ?? "amor"];
     const answers = profile.answers
         .filter((a) => a.questionId !== "trato")
-        .map((a) => describeAnswer(a, profile.answers))
+        .map((a) => describeAnswer(a, profile.answers, quiz))
         .filter((a) => a !== undefined)
         .map((a, i) => `${i + 1}. ${a.question} → ${a.answer}`);
     return `<trato>
@@ -135,20 +147,13 @@ ${answers.join("\n")}
 </respuestas>`;
 }
 
-/** Whole years between a YYYY-MM-DD birth date and `today`. */
-export function ageOn(birthDate: string, today: Date): number {
-    const [year, month, day] = birthDate.split("-").map(Number);
-    const beforeBirthday =
-        today.getUTCMonth() + 1 < month ||
-        (today.getUTCMonth() + 1 === month && today.getUTCDate() < day);
-    return today.getUTCFullYear() - year - (beforeBirthday ? 1 : 0);
-}
-
 /**
  * <trato>, <persona>, <carta>, <respuestas> and <pistas>: everything known
  * about the person. `today` gives their age, for what's common at it.
  */
 export function describeProfile(profile: ReadingProfile, today: Date): string {
+    if (profile.topic && profile.topic !== "amor")
+        return describeMore(profile, profile.topic, today);
     const chart = natalChart(
         profile.birthDate,
         profile.birthTime,
@@ -187,8 +192,142 @@ ${cluesFor(profile.answers)
 </pistas>`;
 }
 
-/** <cielo>: where Venus is now and where it goes in the next four months. */
+/** A placement line for <carta>: "- Venus en Aries (12°30′) · fuego". */
+const line = (p: {
+    body: string;
+    sign: string;
+    degree: string;
+    element: string;
+}) => `- ${p.body} en ${p.sign} (${p.degree}) · ${p.element}`;
+
+/** How <ahora> names a slow planet's cycle with its own natal place. */
+function cycleName(body: string, aspect: string): string {
+    if (aspect !== "conjunción")
+        return `${body} en ${aspect} con el lugar donde estaba cuando nació: un giro de su ciclo`;
+    if (body === "Saturno")
+        return "Saturno vuelve al lugar donde estaba cuando nació: el regreso de Saturno, que llega cerca de los 29 y de los 58 años";
+    if (body === "Júpiter")
+        return "Júpiter vuelve al lugar donde estaba cuando nació: su regreso, cada 12 años";
+    return `${body} vuelve al lugar donde estaba cuando nació`;
+}
+
+/**
+ * <trato>, <persona>, <carta>, <respuestas>, <pistas> and each reading's own
+ * facts (<su-carta> and <entre-ustedes>, <ahora>) for the readings past love.
+ */
+function describeMore(
+    profile: ReadingProfile,
+    topic: Exclude<ReadingTopic, "amor">,
+    today: Date,
+): string {
+    const facts = readingFacts(topic, profile, today);
+    if (!facts) return describeAnswers(profile);
+    const personal = facts.bodies.filter((p) =>
+        (SYNASTRY_BODIES as readonly string[]).includes(p.body),
+    );
+    const bodies = topic === "camino" ? facts.bodies : personal;
+    const lines = bodies.map(line);
+    if (!profile.birthTime)
+        lines.push(
+            "- Luna: sin hora de nacimiento no sabemos dónde estaba (cambia de signo cada dos días y medio)",
+        );
+    const rising = facts.rising;
+    if (rising) {
+        lines.push(
+            `${line(rising)}${rising.near ? ` (cerca del límite: si su hora no es exacta, podría ser ${rising.near})` : ""}`,
+        );
+        const ruler = RULERS[rising.sign];
+        const at = facts.bodies.find((p) => p.body === ruler);
+        if (topic === "personalidad" && at)
+            lines.push(
+                `- El planeta que guía su Ascendente en ${rising.sign} es ${ruler}, en ${at.sign}`,
+            );
+    }
+    const aspects = aspectsBetween(rising ? [...personal, rising] : personal);
+    const element = dominantElement(rising ? [...personal, rising] : personal);
+    const blocks = [
+        describeAnswers(profile),
+        `<persona>
+Nació el ${longDate(profile.birthDate)}${profile.birthTime ? ` a las ${profile.birthTime}` : " (hora desconocida)"}${profile.birthPlace ? ` en ${profile.birthPlace}` : ""}. Tiene ${ageOn(profile.birthDate, today)} años.
+</persona>`,
+        `<carta>
+${lines.join("\n")}
+Aspectos: ${aspects.length ? aspects.map((a) => `${a.a} en ${a.name} con ${a.b} (orbe ${a.orb}°)`).join("; ") : "ninguno mayor"}.
+${element ? `Elemento dominante: ${element}.` : "Elementos repartidos, ninguno domina."}
+</carta>`,
+    ];
+    if (facts.partner) {
+        const p = facts.partner;
+        blocks.push(`<su-carta>
+La otra persona nació el ${longDate(p.birthDate)}${p.timed ? "" : " (hora desconocida: su Luna no se considera)"}.
+${p.bodies.map(line).join("\n")}
+</su-carta>`);
+        const tone = { fluye: "fluye", choca: "choca", funde: "se funde" };
+        blocks.push(`<entre-ustedes>
+Cómo se tocan sus cartas, lo más importante primero ("tu" es la persona que lee; "su", la otra):
+${
+    facts.contacts.length
+        ? facts.contacts
+              .slice(0, 8)
+              .map(
+                  (c) =>
+                      `- Tu ${c.mine} en ${c.name} con su ${c.theirs} (orbe ${c.orb}°): ${tone[c.tone]}`,
+              )
+              .join("\n")
+        : "- Ningún contacto mayor entre sus cartas."
+}
+</entre-ustedes>`);
+    }
+    if (topic === "camino") {
+        const where = facts.sky
+            .filter((p) => p.body === "Júpiter" || p.body === "Saturno")
+            .map((p) => `${p.body} está en ${p.sign}`)
+            .join(" y ");
+        blocks.push(`<ahora>
+Hoy ${where}. Lo que los planetas lentos tocan hoy de su carta, lo que más pesa primero:
+${
+    facts.transits.length
+        ? facts.transits
+              .slice(0, 5)
+              .map(
+                  (t) =>
+                      `- ${t.cycle ? cycleName(t.body, t.name) : `${t.body} en ${t.name} con su ${t.natal}`} (orbe ${t.orb}°, ${t.applying ? "acercándose" : "alejándose"})`,
+              )
+              .join("\n")
+        : "- Ningún paso mayor sobre su carta en este momento."
+}
+</ahora>`);
+    }
+    blocks.push(`<pistas>
+Apuntes de lo que suele venir con esas respuestas, en otros momentos de su vida. No es lo que contó: úsalos para escenas nuevas, elige solo los que encajen con su carta y escribe tus propias frases (nunca las de un apunte).
+${cluesFor(profile.answers)
+    .map((clue) => `- ${clue}`)
+    .join("\n")}
+</pistas>`);
+    return blocks.join("\n\n");
+}
+
+/**
+ * <cielo>: what's ahead. Love: where Venus goes in the next four months.
+ * The path: the slow planets' moments over the year. The others have none.
+ */
 export function describeSky(profile: ReadingProfile, today: Date): string {
+    if (profile.topic === "camino") {
+        const facts = readingFacts("camino", profile, today);
+        const events = (facts?.path ?? []).map(
+            (e, i) => `${i + 1}. ${e.when}: ${e.text}`,
+        );
+        return `<cielo>
+Hoy es ${longDate(today.toISOString().slice(0, 10))}. Los momentos de los planetas lentos en el año que viene:
+${events.join("\n") || "Ninguno mayor."}
+</cielo>`;
+    }
+    if (profile.topic && profile.topic !== "amor") return "";
+    return describeLoveSky(profile, today);
+}
+
+/** <cielo>: where Venus is now and where it goes in the next four months. */
+function describeLoveSky(profile: ReadingProfile, today: Date): string {
     const outlook = readingOutlook(profile, today);
     // Numbered: the reading's `moments` refer to them by number.
     const events = outlook.events.map(
@@ -243,7 +382,7 @@ export function freePrompt(plan: ReadingPlan) {
     const scenes = [...plan.free, plan.hook];
     const [min, max] = totalWords(scenes);
     return {
-        system: `${SOUL}
+        system: `${soul(plan.topic)}
 
 ${METHOD}
 
@@ -290,7 +429,7 @@ export function paidPrompt(plan: ReadingPlan) {
     const [min, max] = totalWords(plan.paid, plan.closing.words);
     const closing = plan.paid.length + 1;
     return {
-        system: `${SOUL}
+        system: `${soul(plan.topic)}
 
 ${METHOD}
 
@@ -308,14 +447,14 @@ Entre ${min} y ${max} palabras en total.
 </escenas>
 
 <proceso>
-Antes de escribir, en tu razonamiento: (1) define su contradicción central en una frase; (2) lleva cada respuesta a un solo campo, el del astro que mejor la explica, y no vuelvas a ella en otro (las que ya usó <inicio> no se repiten); (3) elige tres escenas de la vida diaria, distintas entre sí; (4) elige de <cielo> los momentos que más le hablan; (5) al terminar, verifica: cada campo habla solo de lo suyo; cada astro que aparece por primera vez, explicado en palabras simples (los de <inicio> ya se explicaron); ninguna respuesta citada, parafraseada ni repetida en dos campos; al menos un aspecto si <carta> trae alguno, contado sin su nombre técnico; ningún dato fuera de <carta> y <cielo>; nada de <prohibido> ni metáforas repetidas; ninguna frase de más de 20 palabras ni palabras difíciles; tuteo; el <trato> pedido en cada adjetivo; la otra persona sin género; cada campo en su rango y entre ${min} y ${max} palabras en total.
+Antes de escribir, en tu razonamiento: (1) define su contradicción central en una frase; (2) lleva cada respuesta a un solo campo, el del astro que mejor la explica, y no vuelvas a ella en otro (las que ya usó <inicio> no se repiten); (3) elige tres escenas de la vida diaria, distintas entre sí; ${plan.paid.some((p) => p.kind === "moments") ? "(4) elige de <cielo> los momentos que más le hablan; (5)" : "(4)"} al terminar, verifica: cada campo habla solo de lo suyo; cada astro que aparece por primera vez, explicado en palabras simples (los de <inicio> ya se explicaron); ninguna respuesta citada, parafraseada ni repetida en dos campos; al menos un aspecto si <carta> trae alguno, contado sin su nombre técnico; ningún dato fuera de <carta> y <cielo>; nada de <prohibido> ni metáforas repetidas; ninguna frase de más de 20 palabras ni palabras difíciles; tuteo; el <trato> pedido en cada adjetivo; la otra persona sin género; cada campo en su rango y entre ${min} y ${max} palabras en total.
 </proceso>`,
         /** The model fills the rest of the scenes. */
         schema: paidSchema(plan),
         prompt: (profile: ReadingProfile, teaser: string, today: Date) =>
             `${describeProfile(profile, today)}
 
-${describeSky(profile, today)}
+${describeSky(profile, today) || "<cielo>\nSin momentos por delante en esta lectura.\n</cielo>"}
 
 <inicio>
 ${freeAsText(teaser, plan)}
@@ -340,7 +479,7 @@ export function chatSystemPrompt(
         profile.birthTime,
         profile.birthTimeZone,
     ).placements;
-    return `${SOUL}
+    return `${soul(plan.topic)}
 
 <tarea>
 Conversas con la persona sobre su lectura ${plan.of}, que ya leyó (<lectura>). Eres la misma voz que la escribió y recuerdas todo lo que dijiste. Están en medio de la conversación: no saludes ni comentes la pregunta; respóndela.
@@ -353,7 +492,7 @@ En la página le respondes como su Sol, el de su carta. No hace falta decirlo, p
 - Si pregunta algo que una carta no puede saber (qué siente la otra persona, si va a volver, una fecha exacta), dilo con honestidad en una frase y ofrece lo que sí puedes leer.
 - Si te da la fecha de nacimiento de otra persona, solo conoces su signo solar por esa fecha: habla de cómo dialoga con su carta, sin inventar su Luna ni su Venus.
 - Como mucho una pregunta de vuelta, y solo si te ayuda a afinar la lectura.
-- Si te piden algo ajeno a su vida amorosa, su carta o su lectura, redirige con amabilidad en una frase.
+- Si te piden algo ajeno a ${plan.topic === "amor" ? "su vida amorosa" : plan.about}, su carta o su lectura, redirige con amabilidad en una frase.
 </forma>
 
 ${describeProfile(profile, today)}
@@ -405,4 +544,21 @@ Con el cambio más pequeño que lo vuelva cierto para cualquiera que dio esas re
 ${JSON.stringify(text, null, 2)}
 </texto>`,
     };
+}
+
+export { ageOn } from "./age";
+
+/** The love reading's voice, and the same voice for the others: what changes is which sky exists. */
+const PUBLIC_LOVE = `- La Luna, Venus y Marte no: la primera vez que nombres cada uno, di qué mueve en su vida, con palabras simples y en frases cortas ("Venus habla de cómo te enamoras. La tuya está en Aries: te enamoras rápido y de frente"). Nunca "tu Marte en Cáncer" a secas.`;
+const PUBLIC_MORE = `- Los demás astros y puntos (la Luna, Mercurio, Venus, Marte, Júpiter, Saturno, el Ascendente) no: la primera vez que nombres cada uno, di qué mueve en su vida, con palabras simples y en frases cortas ("Venus habla de cómo te enamoras. La tuya está en Aries: te enamoras rápido y de frente"). Nunca "tu Marte en Cáncer" a secas.`;
+const RIGOR_MORE = `<rigor>
+Solo existen los datos que te doy: <carta> y, si están, <su-carta>, <entre-ustedes>, <ahora> y <cielo>. No menciones casas ni ningún astro o punto que no esté ahí, y no inventes tránsitos, signos ni fechas: si un dato no está, no lo afirmes. Si la Luna viene marcada como incierta o no está (falta la hora), habla de ella con un matiz honesto. Un aspecto solo es "exacto" con menos de 1° de orbe.
+</rigor>`;
+
+function soul(topic: ReadingTopic = "amor"): string {
+    if (topic === "amor") return LOVE_SOUL;
+    return LOVE_SOUL.replace(PUBLIC_LOVE, PUBLIC_MORE).replace(
+        /<rigor>[\s\S]*?<\/rigor>/,
+        RIGOR_MORE,
+    );
 }
