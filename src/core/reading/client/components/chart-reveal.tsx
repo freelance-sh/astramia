@@ -142,7 +142,7 @@ export function ChartReveal({
     }, [mode, reducedMotion]);
 
     return (
-        <div className="flex flex-col items-center gap-8 py-6">
+        <div className="ph-mask flex flex-col items-center gap-8 py-6">
             <div className="relative aspect-square w-[min(80vw,320px)]">
                 <motion.div
                     aria-hidden

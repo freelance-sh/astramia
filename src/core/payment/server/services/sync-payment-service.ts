@@ -1,5 +1,6 @@
 import "server-only";
 import { getLogger } from "@logtape/logtape";
+import { captureServerEvent } from "@/core/analytics/server/posthog";
 import { orderStatusFor, samePrice } from "@/core/payment/domain/catalog";
 import type { Order, PaymentProvider } from "@/core/payment/domain/types";
 import {
@@ -86,6 +87,16 @@ export async function syncPaymentService(
         const current = toOrder(changed ?? order);
         // Fulfillments are idempotent, so a retry repairs one that failed midway.
         if (current.status === "paid") await fulfillOrder(current);
+
+        // The money event, once per order: the webhook and the browser's
+        // return both land here, but only the transition to paid counts.
+        if (changed && current.status === "paid")
+            await captureServerEvent("purchase", current.userId, {
+                reading_id: current.referenceId,
+                revenue: current.price.amountCents,
+                currency: current.price.currency,
+                provider,
+            });
 
         return ok({ order: current });
     } catch (cause) {

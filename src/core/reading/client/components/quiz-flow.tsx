@@ -390,7 +390,7 @@ export function QuizFlow({
         );
 
     return (
-        <div className="flex flex-col gap-8">
+        <div className="ph-mask flex flex-col gap-8">
             <div className="flex items-center gap-3">
                 {step > 0 && !submitting && (
                     <Button

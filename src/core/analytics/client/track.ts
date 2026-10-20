@@ -5,7 +5,12 @@
  * The visitor id lives in localStorage, the visit's in sessionStorage.
  */
 
+import { capturePostHog } from "./posthog";
+
 type Props = Record<string, string | number | boolean | null>;
+
+/** PostHog captures these itself (pageviews, clicks, time on page). */
+const OWN_EVENTS = new Set(["page_view", "page_time", "click"]);
 
 interface Pending {
     name: string;
@@ -61,11 +66,13 @@ export function trackOn(
     if (typeof window === "undefined") return;
     // The team's own panel isn't the product.
     if (path.startsWith("/panel")) return;
+    const id = readingId ?? READING_PATH.exec(path)?.[1];
+    if (!OWN_EVENTS.has(name)) capturePostHog(name, props, id);
     queue.push({
         name,
         at: Date.now(),
         path,
-        readingId: readingId ?? READING_PATH.exec(path)?.[1],
+        readingId: id,
         props,
     });
     if (queue.length >= BATCH) flush();

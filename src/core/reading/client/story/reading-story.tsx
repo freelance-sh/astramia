@@ -517,7 +517,7 @@ export function ReadingStory({
 
     return (
         <MotionConfig reducedMotion="user">
-            <div className="theme-astral relative bg-background text-foreground">
+            <div className="ph-mask theme-astral relative bg-background text-foreground">
                 <Starfield />
 
                 {/* The paid story comes in softly: a screen stood here while it was written. */}

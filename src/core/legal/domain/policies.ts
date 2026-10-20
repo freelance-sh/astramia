@@ -43,5 +43,5 @@ export const LEGAL_ROUTES = {
 /** Bump `version` and `updatedAt` together; keep old versions in git. */
 export const LEGAL_VERSIONS = {
     terms: { version: "1.0", updatedAt: "13 de octubre de 2026" },
-    privacy: { version: "1.3", updatedAt: "19 de octubre de 2026" },
+    privacy: { version: "1.4", updatedAt: "20 de octubre de 2026" },
 } as const;

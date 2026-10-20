@@ -88,7 +88,10 @@ export function MyReadingsScreen({
             {account && !account.anonymous ? (
                 <p className="flex flex-wrap items-center gap-x-2 text-muted-foreground text-sm">
                     Entraste como{" "}
-                    <span className="text-foreground">{account.email}</span> ·
+                    <span className="ph-mask text-foreground">
+                        {account.email}
+                    </span>{" "}
+                    ·
                     <SignOutLink />
                 </p>
             ) : hasReadings ? (

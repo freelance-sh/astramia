@@ -212,6 +212,11 @@ const SECTIONS: LegalSection[] = [
                             "Medir qué anuncios en Facebook e Instagram traen visitas y compras",
                             "Sí, desde tu navegador o la configuración de anuncios de tu cuenta de Meta",
                         ],
+                        [
+                            "Analítica (PostHog)",
+                            "Entender cómo se usa el sitio y por qué algunas personas no completan la compra; en las grabaciones se oculta lo que escribes y el texto de tu lectura",
+                            "Sí, borrando los datos del sitio en tu navegador",
+                        ],
                     ]}
                 />
                 <p>
@@ -226,6 +231,16 @@ const SECTIONS: LegalSection[] = [
                     te pediremos consentimiento cuando corresponda. Puedes
                     gestionar las cookies desde la configuración de tu
                     navegador.
+                </p>
+                <p>
+                    También usamos <strong>PostHog</strong> (PostHog, Inc.)
+                    para analizar el uso del sitio: páginas vistas y acciones
+                    como empezar el cuestionario, ver el precio o iniciar un
+                    pago, junto con grabaciones de sesión. En las grabaciones
+                    ocultamos lo que escribes en los formularios y el texto de
+                    tu cuestionario, tu lectura y tu chat; no le enviamos tus
+                    respuestas ni tus conversaciones. PostHog las trata según
+                    su propia política de privacidad.
                 </p>
             </>
         ),
@@ -279,6 +294,14 @@ const SECTIONS: LegalSection[] = [
                             empiezas una lectura o un pago y tu signo solar,
                             para medir nuestros anuncios. Nunca tus respuestas,
                             tu fecha u hora de nacimiento ni conversaciones.
+                        </>,
+                        <>
+                            <strong>Analítica:</strong> PostHog, Inc. recibe
+                            las páginas que visitas, los pasos del cuestionario
+                            (sin tus respuestas) y grabaciones de sesión en las
+                            que ocultamos lo que escribes y el texto de tu
+                            lectura, para entender por qué algunas personas no
+                            completan la compra.
                         </>,
                         <>
                             <strong>Requerimientos legales:</strong> cuando lo

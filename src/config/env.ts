@@ -33,6 +33,9 @@ export const env = createEnv({
     },
     client: {
         NEXT_PUBLIC_APP_URL: z.url(),
+        /** PostHog project token; analytics stays off while it's empty. */
+        NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: z.string().optional(),
+        NEXT_PUBLIC_POSTHOG_HOST: z.url().default("https://us.i.posthog.com"),
     },
     runtimeEnv: {
         DATABASE_URL: process.env.DATABASE_URL,
@@ -52,6 +55,9 @@ export const env = createEnv({
         AI_MODEL_FALLBACK: process.env.AI_MODEL_FALLBACK,
         VERCEL_ENV: process.env.VERCEL_ENV,
         NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+        NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN:
+            process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN,
+        NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     },
     emptyStringAsUndefined: true,
 });
