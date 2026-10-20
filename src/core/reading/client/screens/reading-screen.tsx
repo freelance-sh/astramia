@@ -4,6 +4,7 @@ import { Starfield } from "@/core/landing/client/effects";
 import { OFFER } from "@/core/landing/domain/content";
 import { BUSINESS } from "@/core/legal/domain/business";
 import { LEGAL_ROUTES } from "@/core/legal/domain/policies";
+import type { Price } from "@/core/payment/domain/types";
 import { CONTINUE_ANCHOR, paidSkies } from "@/core/reading/domain/story";
 import type { ChatMessage, Reading } from "@/core/reading/domain/types";
 import { FormingSky } from "../components/forming-sky";
@@ -154,9 +155,12 @@ export function WritingScreen({
 
 export function UnlockedReadingScreen({
     reading,
+    price,
     content,
 }: {
     reading: Reading;
+    /** What the buyer paid, from their order; `null` if it wasn't bought. */
+    price: Price | null;
     /** Streams in: the full text may still be being written. */
     content: React.ReactNode;
 }) {
@@ -170,7 +174,19 @@ export function UnlockedReadingScreen({
                 readingId={reading.id}
                 hash={paid}
             />
-            <MetaEventOnce name="Purchase" readingId={reading.id} hash={paid} />
+            {/* Paid, whether or not the return URL made it back: the webhook
+                can be the only witness, and a reload is still a purchase.
+                The owner's free unlock has no order, so it isn't one. */}
+            {price && (
+                <MetaEventOnce
+                    name="Purchase"
+                    readingId={reading.id}
+                    params={{
+                        value: price.amountCents / 100,
+                        currency: price.currency,
+                    }}
+                />
+            )}
             <Suspense fallback={<WritingScreen reading={reading} />}>
                 {content}
             </Suspense>

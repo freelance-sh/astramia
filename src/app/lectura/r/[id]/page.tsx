@@ -6,6 +6,7 @@ import {
 } from "@/core/account/client/save-account-card";
 import { recordEvent } from "@/core/analytics/server/repository/events";
 import { captureReadingEvent } from "@/core/analytics/server/posthog";
+import { paidPriceService } from "@/core/payment/server/services/paid-price-service";
 import { payerEmailService } from "@/core/payment/server/services/payer-email-service";
 import { syncCheckoutReturnService } from "@/core/payment/server/services/sync-checkout-return-service";
 import {
@@ -96,6 +97,10 @@ export default async function ReadingPage({
     if (reading.data.locked)
         return <LockedReadingScreen reading={reading.data} payment={payment} />;
 
+    // What the buyer paid, for Meta: an unlock without a paid order is the
+    // owner's free one, and must not count as a Purchase.
+    const paidPrice = await paidPriceService(userId, id);
+
     // Bought without an account: offer one, pre-filled with the paying
     // e-mail. With one, it's already saved: nothing to say.
     const anonymous = Boolean(session.user.isAnonymous);
@@ -107,6 +112,7 @@ export default async function ReadingPage({
     return (
         <UnlockedReadingScreen
             reading={reading.data}
+            price={paidPrice}
             content={
                 <FullReading
                     userId={userId}

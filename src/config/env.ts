@@ -20,6 +20,13 @@ export const env = createEnv({
         GOOGLE_CLIENT_SECRET: z.string().optional(),
         /** Resend: sign-in codes by e-mail. Without it, accounts use a password. */
         RESEND_API_KEY: z.string().optional(),
+        /**
+         * Events Manager → Configuración → API de Conversiones → "Generar
+         * token de acceso". Without it, only the browser pixel reports.
+         */
+        META_CAPI_ACCESS_TOKEN: z.string().optional(),
+        /** "Probar eventos": the server's events are marked as tests. */
+        META_CAPI_TEST_EVENT_CODE: z.string().optional(),
         /** Sender on a domain verified in Resend. */
         EMAIL_FROM: z.string().default("Astramia <hola@astramia.app>"),
         AI_MODEL_TEASER: z.string().default(DEFAULT_AI_MODELS.teaser),
@@ -47,6 +54,8 @@ export const env = createEnv({
         GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
         GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
         RESEND_API_KEY: process.env.RESEND_API_KEY,
+        META_CAPI_ACCESS_TOKEN: process.env.META_CAPI_ACCESS_TOKEN,
+        META_CAPI_TEST_EVENT_CODE: process.env.META_CAPI_TEST_EVENT_CODE,
         EMAIL_FROM: process.env.EMAIL_FROM,
         AI_MODEL_TEASER: process.env.AI_MODEL_TEASER,
         AI_MODEL_READING: process.env.AI_MODEL_READING,

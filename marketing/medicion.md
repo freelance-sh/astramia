@@ -15,10 +15,19 @@ cambian, se rompen los embudos.
 | `ViewContent` | estándar | Llega a donde se corta lo gratis y ve el precio | `value: 19.9`, `currency: 'PEN'` | `viewcontent-<lectura>` |
 | `InitiateCheckout` | estándar | Toca "Desbloquear por S/ 19.90" | `value`, `currency` | — |
 | `AddPaymentInfo` | estándar | Vuelve de Mercado Pago habiendo intentado pagar (aprobado, pendiente o rechazado) | `value`, `currency` | `addpaymentinfo-<lectura>` |
-| `Purchase` | estándar | Vuelve con el pago aprobado | `value: 19.9`, `currency: 'PEN'` | `purchase-<lectura>` |
+| `Purchase` | estándar | Se abre una lectura con un pedido pagado (haya vuelto o no del redirect) | `value` (lo que pagó), `currency` | `purchase-<lectura>` |
 
 - **Una vez por lectura.** ViewContent, AddPaymentInfo y Purchase se mandan
   una sola vez por lectura, aunque recargue o vuelva otro día.
+- **Purchase cuenta lo que se pagó.** El valor y la moneda salen del pedido,
+  no del catálogo, y no hace falta volver del redirect: si el webhook fue el
+  único que vio el pago, el evento sale la primera vez que se abre la
+  lectura. Un desbloqueo sin pedido (el del dueño, que no paga) no cuenta.
+- **Dos copias, un evento.** `Purchase` lo manda el navegador (al abrir la
+  lectura pagada) y el servidor (cuando el pedido pasa a pagado, en
+  `syncPaymentService`), con el mismo `eventID`: Meta cuenta uno. La copia
+  del servidor necesita `META_CAPI_ACCESS_TOKEN` y cubre bloqueadores de
+  anuncios y compradores que no vuelven a la página.
 - **eventID.** Es el id de la lectura, porque una lectura se paga una sola
   vez. Si luego agregamos la API de Conversiones (eventos desde el
   servidor), el servidor manda el mismo id y Meta no cuenta doble.
@@ -32,7 +41,21 @@ cambian, se rompen los embudos.
   FechaIngresada, primero hay que crearlas como "Conversión personalizada"
   en el Administrador de eventos.
 - **Probar.** En Administrador de eventos → Probar eventos, se hace una
-  lectura real y se ven llegar en vivo.
+  lectura real y se ven llegar en vivo. `Purchase` solo aparece con un pago
+  real: el desbloqueo del dueño no manda el evento. Con
+  `META_CAPI_TEST_EVENT_CODE` la copia del servidor llega como prueba, sin
+  ensuciar los datos.
+
+## Qué optimizar
+
+- **Mientras las compras sean pocas:** `Lead` o `CompleteRegistration`, que
+  ya se registran en cada cuestionario terminado. Optimizar por `Purchase`
+  con cero compras deja al conjunto sin señal y Meta no gasta.
+- **Cuando haya unas cuantas compras:** volver a `Purchase`. Ya lleva
+  `value` y `currency`, así que el ROAS y el valor por conversión salen sin
+  tocar código.
+- Cambiar el evento de un conjunto reinicia su aprendizaje: mejor hacerlo
+  mientras el gasto es mínimo.
 
 ## Enlaces de los anuncios: utm
 

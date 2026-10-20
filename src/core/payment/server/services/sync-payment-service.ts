@@ -1,5 +1,8 @@
 import "server-only";
 import { getLogger } from "@logtape/logtape";
+import { ServerConfig } from "@/config/server-config";
+import { metaEventId } from "@/core/analytics/domain/meta";
+import { sendMetaPurchase } from "@/core/analytics/server/meta-capi";
 import { captureServerEvent } from "@/core/analytics/server/posthog";
 import { orderStatusFor, samePrice } from "@/core/payment/domain/catalog";
 import type { Order, PaymentProvider } from "@/core/payment/domain/types";
@@ -90,13 +93,25 @@ export async function syncPaymentService(
 
         // The money event, once per order: the webhook and the browser's
         // return both land here, but only the transition to paid counts.
-        if (changed && current.status === "paid")
+        if (changed && current.status === "paid") {
             await captureServerEvent("purchase", current.userId, {
                 reading_id: current.referenceId,
                 revenue: current.price.amountCents,
                 currency: current.price.currency,
                 provider,
             });
+            // Meta's copy of the same Purchase the pixel sends, with the same
+            // eventID: one counts, and this one also lands when the buyer
+            // never reopens the reading or has the pixel blocked.
+            await sendMetaPurchase({
+                eventId: metaEventId("Purchase", current.referenceId),
+                value: current.price.amountCents / 100,
+                currency: current.price.currency,
+                email: changed.payerEmail ?? payment.payerEmail,
+                externalId: current.userId,
+                eventSourceUrl: `${ServerConfig.baseUrl}/lectura/r/${current.referenceId}`,
+            });
+        }
         // Revenue comes back out the same way it came in: negative.
         if (changed && status === "refunded")
             await captureServerEvent("refund", current.userId, {

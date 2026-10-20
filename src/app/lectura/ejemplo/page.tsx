@@ -128,6 +128,7 @@ export default async function SampleReadingPage({
         return (
             <UnlockedReadingScreen
                 reading={{ ...reading, content: null }}
+                price={null}
                 content={
                     <LateReading
                         reading={reading}

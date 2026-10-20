@@ -3,10 +3,8 @@
 import { usePathname } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useRef } from "react";
+import { META_PIXEL_ID, metaEventId } from "@/core/analytics/domain/meta";
 import { PRODUCTS } from "@/core/payment/domain/catalog";
-
-/** The Meta Pixel the ads are measured with (Business Manager → Events). */
-export const META_PIXEL_ID = "1653247253123702";
 
 declare global {
     interface Window {
@@ -39,6 +37,28 @@ const live = () =>
     typeof window !== "undefined" && !isPanel(window.location.pathname);
 
 /**
+ * Events asked for before the base code ran: `fbq` only exists once the
+ * afterInteractive script executes, which can be after this page's effects
+ * (the paid return's Purchase is one). They wait here and `MetaPixel`
+ * replays them as soon as it can, so a conversion is never dropped.
+ */
+const waiting: (() => void)[] = [];
+
+function send(fire: () => void): void {
+    if (typeof window === "undefined") return;
+    if (typeof window.fbq === "function") fire();
+    else waiting.push(fire);
+}
+
+/** Replays what was asked for before the pixel existed. */
+export function flushMetaEvents(): void {
+    if (typeof window === "undefined" || typeof window.fbq !== "function")
+        return;
+    const events = waiting.splice(0);
+    for (const fire of events) fire();
+}
+
+/**
  * A standard event. `id` (the eventID) lets Meta drop a repeat, and is what
  * a server-side copy (Conversions API) would send to match it. Params never
  * carry what someone told us about their love life: a sign is fine, their
@@ -50,7 +70,10 @@ export function metaEvent(
     id?: string,
 ): void {
     if (!live()) return;
-    window.fbq?.("track", name, params, id ? { eventID: id } : undefined);
+    send(() => {
+        if (!live()) return;
+        window.fbq?.("track", name, params, id ? { eventID: id } : undefined);
+    });
 }
 
 export function metaCustomEvent(
@@ -58,7 +81,10 @@ export function metaCustomEvent(
     params: Record<string, unknown> = {},
 ): void {
     if (!live()) return;
-    window.fbq?.("trackCustom", name, params);
+    send(() => {
+        if (!live()) return;
+        window.fbq?.("trackCustom", name, params);
+    });
 }
 
 /**
@@ -72,13 +98,19 @@ export function metaEventOnce(
 ): void {
     if (!live() || !window.location.pathname.startsWith("/lectura/r/")) return;
     const key = `astramia:${name.toLowerCase()}:${readingId}`;
-    const id = `${name.toLowerCase()}-${readingId}`;
+    const id = metaEventId(name, readingId);
     try {
         if (localStorage.getItem(key)) return;
         localStorage.setItem(key, "1");
     } catch {}
     metaEvent(name, params, id);
 }
+
+/** What one reading costs, as Meta wants it: a number and a currency. */
+export const READING_VALUE = {
+    value: PRODUCTS.reading_unlock.price.amountCents / 100,
+    currency: PRODUCTS.reading_unlock.price.currency,
+};
 
 /**
  * metaEventOnce from a server-rendered page: fires when it shows, or only
@@ -88,23 +120,20 @@ export function MetaEventOnce({
     name,
     readingId,
     hash,
+    params = READING_VALUE,
 }: {
     name: MetaEvent;
     readingId: string;
     hash?: string;
+    /** Defaults to what a reading costs; a Purchase sends what was paid. */
+    params?: Record<string, unknown>;
 }) {
     useEffect(() => {
         if (hash && window.location.hash !== hash) return;
-        metaEventOnce(name, READING_VALUE, readingId);
-    }, [name, readingId, hash]);
+        metaEventOnce(name, params, readingId);
+    }, [name, readingId, hash, params]);
     return null;
 }
-
-/** What one reading costs, as Meta wants it: a number and a currency. */
-export const READING_VALUE = {
-    value: PRODUCTS.reading_unlock.price.amountCents / 100,
-    currency: PRODUCTS.reading_unlock.price.currency,
-};
 
 /**
  * Meta's base code, as their panel gives it, loaded after the page is
@@ -115,16 +144,27 @@ export function MetaPixel() {
     const path = usePathname();
     const first = useRef(true);
     useEffect(() => {
+        // Whatever this page asked for before the base code ran (a paid
+        // return's Purchase, for one) goes out now, or on the next tick.
+        flushMetaEvents();
+        const retry = window.setTimeout(flushMetaEvents, 1000);
+        return () => window.clearTimeout(retry);
+    }, []);
+    useEffect(() => {
         if (first.current) {
             first.current = false;
             return;
         }
-        if (!isPanel(path)) window.fbq?.("track", "PageView");
+        if (!isPanel(path)) send(() => window.fbq?.("track", "PageView"));
     }, [path]);
 
     return (
         <>
-            <Script id="meta-pixel" strategy="afterInteractive">
+            <Script
+                id="meta-pixel"
+                strategy="afterInteractive"
+                onReady={flushMetaEvents}
+            >
                 {`if (!location.pathname.startsWith("/panel")) {
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};

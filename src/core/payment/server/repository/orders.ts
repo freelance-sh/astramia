@@ -1,5 +1,6 @@
 import "server-only";
 import { and, desc, eq, ne } from "drizzle-orm";
+import type { Price } from "@/core/payment/domain/types";
 import { db } from "@/server/drizzle/db";
 import {
     type NewOrderRow,
@@ -34,6 +35,27 @@ export async function findPayerEmail(
         orderBy: [desc(orders.paidAt)],
     });
     return row?.payerEmail ?? null;
+}
+
+/**
+ * What a paid order for `referenceId` actually charged. Meta gets this, not
+ * our catalog: the gateway may have applied a coupon or a local price.
+ */
+export async function findPaidPrice(
+    userId: string,
+    referenceId: string,
+): Promise<Price | null> {
+    const row = await db.query.orders.findFirst({
+        columns: { amountCents: true, currency: true },
+        where: and(
+            eq(orders.userId, userId),
+            eq(orders.referenceId, referenceId),
+            eq(orders.status, "paid"),
+        ),
+        orderBy: [desc(orders.paidAt)],
+    });
+    if (!row) return null;
+    return { amountCents: row.amountCents, currency: row.currency };
 }
 
 export async function setOrderProviderRef(
