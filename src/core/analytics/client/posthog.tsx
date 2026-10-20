@@ -89,6 +89,7 @@ export function capturePostHog(
     name: string,
     props?: Props,
     readingId?: string,
+    instant = false,
 ): void {
     if (!TOKEN || typeof window === "undefined") return;
     if (isPanel(window.location.pathname)) return;
@@ -96,7 +97,12 @@ export function capturePostHog(
     for (const key of PRIVATE_PROPS) delete properties[key];
     if (readingId) properties.reading_id = readingId;
     properties.path = window.location.pathname;
-    posthog.capture(name, properties);
+    // `instant` is for events sent while the tab is going away.
+    posthog.capture(
+        name,
+        properties,
+        instant ? { send_instantly: true } : undefined,
+    );
 }
 
 let identified: string | null = null;

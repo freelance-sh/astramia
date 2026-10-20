@@ -1,9 +1,13 @@
 "use client";
 
 import { Lock } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { metaEvent, READING_VALUE } from "@/core/analytics/client/meta-pixel";
+import {
+    markCheckout,
+    markPaywallButtonSeen,
+} from "@/core/analytics/client/paywall";
 import { flush, track } from "@/core/analytics/client/track";
 import { GoldButton } from "@/core/landing/client/effects";
 import { Spinner } from "@/frontend/components/ui/spinner";
@@ -19,6 +23,8 @@ export function UnlockButton({
 }) {
     const checkout = useReadings().useCheckout(readingId);
     const { reset } = checkout;
+    const box = useRef<HTMLDivElement>(null);
+    const seen = useRef(false);
 
     // Back from the gateway, the browser may restore this page from its
     // back/forward cache with the state frozen at "redirecting": the button
@@ -31,7 +37,27 @@ export function UnlockButton({
         return () => window.removeEventListener("pageshow", onShow);
     }, [reset]);
 
+    // The price can be read without the button ever entering the screen:
+    // that's a different drop-off than seeing "Desbloquear" and leaving.
+    useEffect(() => {
+        const element = box.current;
+        if (!element || seen.current) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (!entry?.isIntersecting) return;
+                seen.current = true;
+                markPaywallButtonSeen(readingId);
+                track("paywall_button_view", { label }, readingId);
+                observer.disconnect();
+            },
+            { threshold: 0.5 },
+        );
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, [label, readingId]);
+
     async function start() {
+        markCheckout(readingId);
         track("checkout_click", { label }, readingId);
         metaEvent("InitiateCheckout", READING_VALUE);
         try {
@@ -65,14 +91,16 @@ export function UnlockButton({
     const busy = checkout.isPending || checkout.isSuccess;
 
     return (
-        <GoldButton
-            size="lg"
-            className="w-full rounded-full sm:w-auto"
-            disabled={busy}
-            onClick={start}
-        >
-            {busy ? <Spinner /> : <Lock />}
-            {label}
-        </GoldButton>
+        <div ref={box} className="w-full sm:w-auto">
+            <GoldButton
+                size="lg"
+                className="w-full rounded-full sm:w-auto"
+                disabled={busy}
+                onClick={start}
+            >
+                {busy ? <Spinner /> : <Lock />}
+                {label}
+            </GoldButton>
+        </div>
     );
 }

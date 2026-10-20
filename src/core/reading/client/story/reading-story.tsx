@@ -13,7 +13,11 @@ import {
     metaEventOnce,
     READING_VALUE,
 } from "@/core/analytics/client/meta-pixel";
-import { track } from "@/core/analytics/client/track";
+import {
+    checkoutStarted,
+    paywallButtonSeenAt,
+} from "@/core/analytics/client/paywall";
+import { flush, track } from "@/core/analytics/client/track";
 import { Starfield } from "@/core/landing/client/effects";
 import { AstramiaLogo } from "@/core/landing/client/sections/astramia-logo";
 import { longDate, shortDate } from "@/core/reading/domain/chart";
@@ -489,6 +493,7 @@ export function ReadingStory({
     // (where the free part stops) and, once paid, the end.
     const paid = Boolean(content);
     const furthest = useRef(COVER_STEP);
+    const doorAt = useRef<number | null>(null);
     useEffect(() => {
         furthest.current = COVER_STEP;
         track("reading_view", { paid, steps: story.steps.length }, reading.id);
@@ -504,6 +509,7 @@ export function ReadingStory({
             reading.id,
         );
         if (reached?.kind === "door") {
+            if (!paid) doorAt.current ??= Date.now();
             track("paywall_view", props, reading.id);
             // The price, seen: where the free part stops.
             if (!paid) metaEventOnce("ViewContent", READING_VALUE, reading.id);
@@ -511,6 +517,57 @@ export function ReadingStory({
         if (paid && active === story.steps.length - 1)
             track("story_end", props, reading.id);
     }, [active, story, paid, reading.id]);
+
+    // The most common exit: the price was read and the tab closed before
+    // paying. Sent while the page goes away, so it must leave at once.
+    useEffect(() => {
+        if (paid) return;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        let sent = false;
+        const leave = (reason: "pagehide" | "hidden") => {
+            if (sent || checkoutStarted(reading.id)) return;
+            const door = doorAt.current;
+            if (door === null) return;
+            sent = true;
+            const button = paywallButtonSeenAt(reading.id);
+            track(
+                "paywall_exit",
+                {
+                    seconds: Math.round((Date.now() - (button ?? door)) / 1000),
+                    button_seen: button !== null,
+                    step: furthest.current + 1,
+                    of: story.steps.length,
+                    reason,
+                },
+                reading.id,
+                { instant: true },
+            );
+            flush();
+        };
+        const onVisibility = () => {
+            if (document.visibilityState !== "hidden") {
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = undefined;
+                }
+                return;
+            }
+            // Mobile can kill a hidden tab without `pagehide`: a short grace
+            // period catches it without counting a quick tab switch.
+            timer = setTimeout(() => leave("hidden"), 1000);
+        };
+        const onPageHide = () => {
+            if (timer) clearTimeout(timer);
+            leave("pagehide");
+        };
+        document.addEventListener("visibilitychange", onVisibility);
+        window.addEventListener("pagehide", onPageHide);
+        return () => {
+            document.removeEventListener("visibilitychange", onVisibility);
+            window.removeEventListener("pagehide", onPageHide);
+            if (timer) clearTimeout(timer);
+        };
+    }, [paid, reading.id, story.steps.length]);
 
     const step = story.steps[active] ?? COVER;
     const chapter = step.chapter === null ? null : story.chapters[step.chapter];

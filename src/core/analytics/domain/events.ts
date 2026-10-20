@@ -8,7 +8,9 @@ import { z } from "zod";
  * In the browser: page_view, page_leave (active seconds), click (any
  * `data-track` element), client_error, quiz_start, quiz_answer, quiz_back,
  * quiz_submit, quiz_error, reading_view, story_step (each new step
- * reached), paywall_view, story_end, checkout_click, chat_view, chat_send.
+ * reached), paywall_view, paywall_button_view (the unlock button reached the
+ * screen), paywall_exit (the tab left after the price, before paying),
+ * story_end, checkout_click, chat_view, chat_send.
  *
  * On the server: reading_created (ms to write the free part), content_written
  * (ms for the paid one), checkout_return, payment_approved, chat_reply.

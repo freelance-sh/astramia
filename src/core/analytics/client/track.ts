@@ -8,6 +8,7 @@
 import { capturePostHog } from "./posthog";
 
 type Props = Record<string, string | number | boolean | null>;
+type TrackOptions = { instant?: boolean };
 
 /** PostHog captures these itself (pageviews, clicks, time on page). */
 const OWN_EVENTS = new Set(["page_view", "page_time", "click"]);
@@ -51,9 +52,14 @@ function identity() {
 }
 
 /** Records an event; on a reading's page it's tied to that reading. */
-export function track(name: string, props?: Props, readingId?: string): void {
+export function track(
+    name: string,
+    props?: Props,
+    readingId?: string,
+    options?: TrackOptions,
+): void {
     if (typeof window === "undefined") return;
-    trackOn(window.location.pathname, name, props, readingId);
+    trackOn(window.location.pathname, name, props, readingId, options);
 }
 
 /** Records an event about `path`, which may be a page just left. */
@@ -62,12 +68,14 @@ export function trackOn(
     name: string,
     props?: Props,
     readingId?: string,
+    options?: TrackOptions,
 ): void {
     if (typeof window === "undefined") return;
     // The team's own panel isn't the product.
     if (path.startsWith("/panel")) return;
     const id = readingId ?? READING_PATH.exec(path)?.[1];
-    if (!OWN_EVENTS.has(name)) capturePostHog(name, props, id);
+    if (!OWN_EVENTS.has(name))
+        capturePostHog(name, props, id, options?.instant);
     queue.push({
         name,
         at: Date.now(),
