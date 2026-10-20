@@ -533,7 +533,9 @@ export function ReadingStory({
             track(
                 "paywall_exit",
                 {
+                    // On the button when it was seen, otherwise on the price.
                     seconds: Math.round((Date.now() - (button ?? door)) / 1000),
+                    door_seconds: Math.round((Date.now() - door) / 1000),
                     button_seen: button !== null,
                     step: furthest.current + 1,
                     of: story.steps.length,
