@@ -97,6 +97,14 @@ export async function syncPaymentService(
                 currency: current.price.currency,
                 provider,
             });
+        // Revenue comes back out the same way it came in: negative.
+        if (changed && status === "refunded")
+            await captureServerEvent("refund", current.userId, {
+                reading_id: current.referenceId,
+                revenue: -current.price.amountCents,
+                currency: current.price.currency,
+                provider,
+            });
 
         return ok({ order: current });
     } catch (cause) {

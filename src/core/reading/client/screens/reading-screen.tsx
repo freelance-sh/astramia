@@ -8,6 +8,7 @@ import { CONTINUE_ANCHOR, paidSkies } from "@/core/reading/domain/story";
 import type { ChatMessage, Reading } from "@/core/reading/domain/types";
 import { FormingSky } from "../components/forming-sky";
 import { ReadingChat } from "../components/reading-chat";
+import { ReadingReady } from "../components/reading-ready";
 import { RefreshWhile } from "../components/refresh-while";
 import { UnlockButton } from "../components/unlock-button";
 import { ReadingStory } from "../story/reading-story";
@@ -192,20 +193,23 @@ export function ReadingBody({
 }) {
     if (!reading.content) return <WritingScreen reading={reading} refresh />;
     return (
-        <ReadingStory
-            reading={reading}
-            content={reading.content}
-            notice={notice}
-            account={account}
-            chat={
-                <ReadingChat
-                    readingId={reading.id}
-                    initialMessages={messages}
-                    expiresAt={reading.chatExpiresAt}
-                    sunSign={reading.sunSign}
-                    topic={reading.topic}
-                />
-            }
-        />
+        <>
+            <ReadingReady readingId={reading.id} />
+            <ReadingStory
+                reading={reading}
+                content={reading.content}
+                notice={notice}
+                account={account}
+                chat={
+                    <ReadingChat
+                        readingId={reading.id}
+                        initialMessages={messages}
+                        expiresAt={reading.chatExpiresAt}
+                        sunSign={reading.sunSign}
+                        topic={reading.topic}
+                    />
+                }
+            />
+        </>
     );
 }

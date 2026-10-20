@@ -195,7 +195,7 @@ function StepContent({
                 <div className="flex flex-col gap-4">
                     {/* Its heading dissolves going up, like any text; the
                         cut and the box stay whole. */}
-                    <div data-fades className="flex flex-col gap-4">
+                    <div data-fades className="ph-mask flex flex-col gap-4">
                         {step.eyebrow && (
                             <motion.p
                                 {...ENTER}
@@ -216,7 +216,7 @@ function StepContent({
                     <motion.div
                         {...ENTER}
                         transition={{ ...ENTER.transition, delay: 0.35 }}
-                        className={CARD}
+                        className={cn(CARD, "ph-mask")}
                     >
                         {/* The blur starts mid-sentence, right where it was cut,
                             and fades out over its last lines. */}
@@ -517,7 +517,7 @@ export function ReadingStory({
 
     return (
         <MotionConfig reducedMotion="user">
-            <div className="ph-mask theme-astral relative bg-background text-foreground">
+            <div className="theme-astral relative bg-background text-foreground">
                 <Starfield />
 
                 {/* The paid story comes in softly: a screen stood here while it was written. */}
@@ -596,7 +596,7 @@ export function ReadingStory({
                             // On a phone it starts under the drawing, whatever
                             // the screen's height: grown up from the bottom, a
                             // short screen pushed it into the image.
-                            className="flex min-h-[100svh] flex-col gap-4 pt-[52svh] pb-[6svh] lg:justify-center lg:gap-6 lg:pt-0 lg:pb-0"
+                            className="ph-mask flex min-h-[100svh] flex-col gap-4 pt-[52svh] pb-[6svh] lg:justify-center lg:gap-6 lg:pt-0 lg:pb-0"
                         >
                             <motion.div
                                 {...ENTER}
@@ -646,6 +646,10 @@ export function ReadingStory({
                                     // scroll below.
                                     s.kind === "door" &&
                                         "max-lg:justify-start max-lg:pt-[56svh]",
+                                    // The door itself (price, button, trust
+                                    // copy) stays readable in replays; the
+                                    // story and the quiz don't.
+                                    s.kind !== "door" && "ph-mask",
                                 )}
                             >
                                 <StepContent step={s} door={door} />
@@ -658,7 +662,7 @@ export function ReadingStory({
                     <section
                         id={CHAT_ANCHOR}
                         aria-label="Chat sobre tu lectura"
-                        className="relative z-10"
+                        className="ph-mask relative z-10"
                     >
                         {chat}
                     </section>

@@ -5,6 +5,7 @@ import {
     SaveAccountNotice,
 } from "@/core/account/client/save-account-card";
 import { recordEvent } from "@/core/analytics/server/repository/events";
+import { captureReadingEvent } from "@/core/analytics/server/posthog";
 import { payerEmailService } from "@/core/payment/server/services/payer-email-service";
 import { syncCheckoutReturnService } from "@/core/payment/server/services/sync-checkout-return-service";
 import {
@@ -55,12 +56,19 @@ export default async function ReadingPage({
                 ? "review"
                 : "error"
             : (returned.data?.order?.status ?? "left");
-        after(() =>
-            recordEvent("checkout_return", {
+        const provider = query.checkout;
+        after(async () => {
+            await recordEvent("checkout_return", {
                 readingId: id,
-                props: { provider: query.checkout ?? null, outcome },
-            }),
-        );
+                props: { provider, outcome },
+            });
+            // Same outcome in PostHog, after the redirect: the owner is
+            // looked up there, so a paid return still counts.
+            await captureReadingEvent("checkout_return", id, {
+                provider,
+                outcome,
+            });
+        });
     }
     if (!returned.ok) {
         // Never offer to pay again for a payment we couldn't apply: a mismatch

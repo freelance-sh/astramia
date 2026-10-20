@@ -13,6 +13,39 @@ type Props = Record<string, string | number | boolean | null | undefined>;
 /** The team's own panel isn't anyone's visit. */
 const isPanel = (path: string) => path.startsWith("/panel");
 
+const UTM = [
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "utm_term",
+] as const;
+const CAMPAIGN_KEY = "astramia:campaign";
+
+/**
+ * The campaign that brought them, from the first link they arrived by. Kept
+ * in localStorage and registered as a super property, so every event after
+ * the first page can still be split by ad.
+ */
+function firstTouch(): Record<string, string> {
+    try {
+        const kept = localStorage.getItem(CAMPAIGN_KEY);
+        if (kept) return JSON.parse(kept) as Record<string, string>;
+    } catch {}
+    const params = new URLSearchParams(window.location.search);
+    const found: Record<string, string> = {};
+    for (const key of UTM) {
+        const value = params.get(key);
+        if (value) found[key] = value;
+    }
+    if (Object.keys(found).length) {
+        try {
+            localStorage.setItem(CAMPAIGN_KEY, JSON.stringify(found));
+        } catch {}
+    }
+    return found;
+}
+
 /**
  * PostHog's browser SDK. Initialized when the module loads, before any page
  * renders, so the first events aren't lost. Without a token it stays off and
@@ -41,6 +74,8 @@ if (typeof window !== "undefined" && TOKEN) {
             maskTextSelector: ".ph-mask",
         },
     });
+    const campaign = firstTouch();
+    if (Object.keys(campaign).length) posthog.register(campaign);
 }
 
 /** What they answered is theirs: PostHog gets the funnel, not the answer. */
@@ -88,6 +123,9 @@ export function PostHogAnalytics() {
                     return;
                 }
                 if (data.user.id === identified) return;
+                // Signing up from an anonymous reading leaves the old id
+                // behind: tell PostHog it's the same person.
+                if (identified) posthog.alias(data.user.id, identified);
                 identified = data.user.id;
                 posthog.identify(data.user.id, {
                     email: data.user.email,
