@@ -8,6 +8,7 @@ import {
 } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/frontend/components/ui/card";
+import { useIsMobile } from "@/frontend/hooks/use-mobile";
 import { cn } from "@/frontend/lib/utils";
 import {
     type ChatMessage,
@@ -44,6 +45,7 @@ export function ChatDemo() {
     const logRef = useRef<HTMLDivElement>(null);
     const inView = useInView(ref, { once: true, margin: "-120px" });
     const reducedMotion = useReducedMotion();
+    const isMobile = useIsMobile();
     const [shown, setShown] = useState<ChatMessage[]>([]);
     const [draft, setDraft] = useState<string | null>(null);
     const [typing, setTyping] = useState(false);
@@ -53,8 +55,12 @@ export function ChatDemo() {
 
     useEffect(() => {
         if (!inView) return;
-        if (reducedMotion) {
+        // Typing every character is a desktop nicety; on a phone the demo
+        // arrives whole, with no state updates while scrolling.
+        if (reducedMotion || isMobile) {
             setShown(DEMO_CHAT);
+            setDraft(null);
+            setTyping(false);
             return;
         }
         let cancelled = false;
@@ -96,7 +102,7 @@ export function ChatDemo() {
             cancelled = true;
             for (const t of timers) window.clearTimeout(t);
         };
-    }, [inView, reducedMotion]);
+    }, [inView, reducedMotion, isMobile]);
 
     useEffect(() => {
         if (!inView) return;
