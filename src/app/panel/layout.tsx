@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { PropsWithChildren } from "react";
+import { Providers } from "@/frontend/providers/providers";
 
 export const metadata: Metadata = {
     title: "Panel · Astramia",
@@ -9,8 +10,10 @@ export const metadata: Metadata = {
 /** The team's panel: not linked anywhere, not indexed, behind sign-in. */
 export default function PanelLayout({ children }: PropsWithChildren) {
     return (
-        <div className="min-h-svh bg-background text-foreground">
-            {children}
-        </div>
+        <Providers>
+            <div className="min-h-svh bg-background text-foreground">
+                {children}
+            </div>
+        </Providers>
     );
 }

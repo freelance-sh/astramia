@@ -5,7 +5,7 @@ import { MetaPixel } from "@/core/analytics/client/meta-pixel";
 import { PostHogAnalytics } from "@/core/analytics/client/posthog";
 import { SiteAnalytics } from "@/core/analytics/client/site-analytics";
 import { OFFER } from "@/core/landing/domain/content";
-import { Providers } from "@/frontend/providers/providers";
+import { ThemeProvider } from "@/frontend/providers/theme-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,7 +38,14 @@ export default function RootLayout({ children }: PropsWithChildren) {
             className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
         >
             <body className="min-h-svh antialiased">
-                <Providers>{children}</Providers>
+                <ThemeProvider
+                    attribute="class"
+                    defaultTheme="system"
+                    enableSystem
+                    disableTransitionOnChange
+                >
+                    {children}
+                </ThemeProvider>
                 <PostHogAnalytics />
                 <SiteAnalytics />
                 <MetaPixel />

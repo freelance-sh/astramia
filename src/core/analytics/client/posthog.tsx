@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import posthog from "posthog-js";
 import { useEffect } from "react";
 import { env } from "@/config/env";
-import { authClient } from "@/frontend/auth/auth";
 
 const TOKEN = env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
 
@@ -142,32 +141,44 @@ export function PostHogAnalytics() {
         if (path.startsWith("/lectura")) posthog.startSessionRecording();
     }, [path]);
     useEffect(() => {
-        if (!TOKEN) return;
+        if (!TOKEN || isPanel(path)) return;
+        // The landing has no session of its own to identify, and loading the
+        // auth client there is exactly the weight we're taking off a phone.
+        const needsUser =
+            path.startsWith("/lectura") ||
+            path.startsWith("/lecturas") ||
+            path.startsWith("/projects") ||
+            path.startsWith("/auth");
+        if (!needsUser) return;
+
         let cancelled = false;
-        authClient
-            .getSession()
-            .then(({ data }) => {
-                if (cancelled || isPanel(path)) return;
-                if (!data?.user) {
-                    if (identified) {
-                        posthog.reset();
-                        identified = null;
+        const timer = setTimeout(() => {
+            import("@/frontend/auth/auth")
+                .then(({ authClient }) => authClient.getSession())
+                .then(({ data }) => {
+                    if (cancelled) return;
+                    if (!data?.user) {
+                        if (identified) {
+                            posthog.reset();
+                            identified = null;
+                        }
+                        return;
                     }
-                    return;
-                }
-                if (data.user.id === identified) return;
-                // Signing up from an anonymous reading leaves the old id
-                // behind: tell PostHog it's the same person.
-                if (identified) posthog.alias(data.user.id, identified);
-                identified = data.user.id;
-                posthog.identify(data.user.id, {
-                    email: data.user.email,
-                    anonymous: Boolean(data.user.isAnonymous),
-                });
-            })
-            .catch(() => {});
+                    if (data.user.id === identified) return;
+                    // Signing up from an anonymous reading leaves the old id
+                    // behind: tell PostHog it's the same person.
+                    if (identified) posthog.alias(data.user.id, identified);
+                    identified = data.user.id;
+                    posthog.identify(data.user.id, {
+                        email: data.user.email,
+                        anonymous: Boolean(data.user.isAnonymous),
+                    });
+                })
+                .catch(() => {});
+        }, 800);
         return () => {
             cancelled = true;
+            clearTimeout(timer);
         };
     }, [path]);
     return null;
