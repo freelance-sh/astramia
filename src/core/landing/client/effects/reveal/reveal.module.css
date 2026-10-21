@@ -1,0 +1,23 @@
+/* Scroll-driven fade/lift, no JavaScript and no observer per section. */
+.reveal {
+    animation: reveal both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 45%;
+}
+
+@keyframes reveal {
+    from {
+        opacity: 0;
+        translate: 0 28px;
+    }
+    to {
+        opacity: 1;
+        translate: 0 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal {
+        animation: none;
+    }
+}
