@@ -1,5 +1,6 @@
 import "server-only";
 import { getLogger } from "@logtape/logtape";
+import { sendMetaPurchase } from "@/core/analytics/server/meta";
 import { captureServerEvent } from "@/core/analytics/server/posthog";
 import { orderStatusFor, samePrice } from "@/core/payment/domain/catalog";
 import type { Order, PaymentProvider } from "@/core/payment/domain/types";
@@ -91,12 +92,23 @@ export async function syncPaymentService(
         // The money event, once per order: the webhook and the browser's
         // return both land here, but only the transition to paid counts.
         if (changed && current.status === "paid")
-            await captureServerEvent("purchase", current.userId, {
-                reading_id: current.referenceId,
-                revenue: current.price.amountCents,
-                currency: current.price.currency,
-                provider,
-            });
+            await Promise.all([
+                captureServerEvent("purchase", current.userId, {
+                    reading_id: current.referenceId,
+                    revenue: current.price.amountCents,
+                    currency: current.price.currency,
+                    provider,
+                }),
+                // Meta's copy: closing the tab before returning doesn't lose it.
+                sendMetaPurchase({
+                    readingId: current.referenceId,
+                    orderId: current.id,
+                    amountCents: current.price.amountCents,
+                    currency: current.price.currency,
+                    email: payment.payerEmail,
+                    userId: current.userId,
+                }),
+            ]);
         // Revenue comes back out the same way it came in: negative.
         if (changed && status === "refunded")
             await captureServerEvent("refund", current.userId, {

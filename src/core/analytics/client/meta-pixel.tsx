@@ -3,9 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { PRODUCTS } from "@/core/payment/domain/catalog";
-
-/** The Meta Pixel the ads are measured with (Business Manager → Events). */
-export const META_PIXEL_ID = "1653247253123702";
+import { META_PIXEL_ID } from "../domain/meta";
 
 declare global {
     interface Window {
