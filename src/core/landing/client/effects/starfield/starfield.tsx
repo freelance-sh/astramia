@@ -254,7 +254,7 @@ export function Starfield({ className }: { className?: string }) {
         <canvas
             ref={canvasRef}
             aria-hidden
-            className={cn(styles.canvas, className)}
+            className={cn(styles.canvas, "ph-no-capture", className)}
         />
     );
 }

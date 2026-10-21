@@ -37,7 +37,7 @@ export function FormingSky({
     const lineStep = figure ? LINES_IN / Math.max(figure.lines.length, 1) : 0;
 
     return (
-        <div className="flex flex-col items-center gap-4">
+        <div className="ph-no-capture flex flex-col items-center gap-4">
             <div className="relative aspect-square w-[min(68vw,300px)]">
                 <div
                     aria-hidden

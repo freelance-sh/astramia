@@ -102,7 +102,12 @@ export function ZodiacWheel({ activeSign, className }: ZodiacWheelProps) {
         <div
             ref={rootRef}
             aria-hidden
-            className={cn(styles.root, active && styles.hasActive, className)}
+            className={cn(
+                styles.root,
+                "ph-no-capture",
+                active && styles.hasActive,
+                className,
+            )}
         >
             <div className={styles.halo} />
 

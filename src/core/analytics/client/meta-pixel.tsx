@@ -38,6 +38,25 @@ type MetaCustomEvent = "InicioCuestionario" | "FechaIngresada";
 const live = () =>
     typeof window !== "undefined" && !isPanel(window.location.pathname);
 
+/** Calls made before the pixel loads (it waits for idle): keep them. */
+type MetaCall = () => void;
+const pending: MetaCall[] = [];
+
+function whenReady(call: MetaCall): void {
+    if (typeof window === "undefined") return;
+    if (window.fbq) {
+        call();
+        return;
+    }
+    pending.push(call);
+    if (pending.length > 50) pending.shift();
+}
+
+/** Runs after the pixel's script loads, replaying what happened meanwhile. */
+export function flushMeta(): void {
+    while (pending.length) pending.shift()?.();
+}
+
 /**
  * A standard event. `id` (the eventID) lets Meta drop a repeat, and is what
  * a server-side copy (Conversions API) would send to match it. Params never
@@ -50,7 +69,9 @@ export function metaEvent(
     id?: string,
 ): void {
     if (!live()) return;
-    window.fbq?.("track", name, params, id ? { eventID: id } : undefined);
+    whenReady(() =>
+        window.fbq?.("track", name, params, id ? { eventID: id } : undefined),
+    );
 }
 
 export function metaCustomEvent(
@@ -58,7 +79,7 @@ export function metaCustomEvent(
     params: Record<string, unknown> = {},
 ): void {
     if (!live()) return;
-    window.fbq?.("trackCustom", name, params);
+    whenReady(() => window.fbq?.("trackCustom", name, params));
 }
 
 /**
@@ -119,12 +140,17 @@ export function MetaPixel() {
             first.current = false;
             return;
         }
-        if (!isPanel(path)) window.fbq?.("track", "PageView");
+        if (!isPanel(path))
+            whenReady(() => window.fbq?.("track", "PageView"));
     }, [path]);
 
     return (
         <>
-            <Script id="meta-pixel" strategy="afterInteractive">
+            <Script
+                id="meta-pixel"
+                strategy="lazyOnload"
+                onLoad={flushMeta}
+            >
                 {`if (!location.pathname.startsWith("/panel")) {
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -133,6 +159,8 @@ n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
+// We track the events we need by hand: Meta's DOM auto-scan is dead weight.
+fbq('set', 'autoConfig', false, '${META_PIXEL_ID}');
 fbq('init', '${META_PIXEL_ID}');
 fbq('track', 'PageView');
 }`}

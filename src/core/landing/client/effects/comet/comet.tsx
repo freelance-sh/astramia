@@ -7,7 +7,7 @@ import styles from "./comet.module.css";
  */
 export function Comet({ className }: { className?: string }) {
     return (
-        <div aria-hidden className={cn(styles.root, className)}>
+        <div aria-hidden className={cn(styles.root, "ph-no-capture", className)}>
             <div className={styles.comet}>
                 <span className={styles.tail} />
                 <span className={styles.head} />

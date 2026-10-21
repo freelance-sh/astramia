@@ -52,14 +52,17 @@ function firstTouch(): Record<string, string> {
  * every call below is a no-op.
  */
 if (typeof window !== "undefined" && TOKEN) {
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
     posthog.init(TOKEN, {
         api_host: env.NEXT_PUBLIC_POSTHOG_HOST,
         defaults: "2026-05-30",
         capture_pageview: "history_change",
         capture_pageleave: true,
         person_profiles: "identified_only",
-        // Our own events say what happened; autocapture needn't read the
-        // answers on the buttons it records.
+        // Our own events say what happened; autocapture, dead clicks and
+        // surveys only add listeners and third-party scripts on a phone.
+        autocapture: false,
+        disable_surveys: true,
         mask_all_text: true,
         before_send: (event) => {
             const url = event?.properties?.$current_url;
@@ -72,6 +75,9 @@ if (typeof window !== "undefined" && TOKEN) {
             // reading carry `ph-mask`, so what they answer stays out too.
             maskAllInputs: true,
             maskTextSelector: ".ph-mask",
+            // The recorder is the heaviest third party on the page.
+            collectFonts: false,
+            sampling: { mousemove: coarse ? false : 200 },
         },
     });
     const campaign = firstTouch();
