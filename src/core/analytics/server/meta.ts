@@ -30,7 +30,7 @@ export async function sendMetaPurchase({
     email?: string | null;
     userId: string;
 }): Promise<void> {
-    const token = env.META_CAPI_TOKEN;
+    const token = env.META_CAPI_TOKEN ?? env.META_CAPI_ACCESS_TOKEN;
     if (!token) return;
 
     const userData: Record<string, string[]> = {

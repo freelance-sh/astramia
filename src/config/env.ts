@@ -15,6 +15,8 @@ export const env = createEnv({
         MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
         /** Meta Conversions API: the purchase Meta never sees if the tab closes. */
         META_CAPI_TOKEN: z.string().optional(),
+        /** The name some Meta guides use; either works. */
+        META_CAPI_ACCESS_TOKEN: z.string().optional(),
         /** Events Manager → Test Events code; send test purchases there. */
         META_TEST_EVENT_CODE: z.string().optional(),
         META_GRAPH_VERSION: z.string().default("v23.0"),
@@ -49,6 +51,7 @@ export const env = createEnv({
         MERCADOPAGO_ACCESS_TOKEN: process.env.MERCADOPAGO_ACCESS_TOKEN,
         MERCADOPAGO_WEBHOOK_SECRET: process.env.MERCADOPAGO_WEBHOOK_SECRET,
         META_CAPI_TOKEN: process.env.META_CAPI_TOKEN,
+        META_CAPI_ACCESS_TOKEN: process.env.META_CAPI_ACCESS_TOKEN,
         META_TEST_EVENT_CODE: process.env.META_TEST_EVENT_CODE,
         META_GRAPH_VERSION: process.env.META_GRAPH_VERSION,
         AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
