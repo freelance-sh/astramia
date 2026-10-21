@@ -78,6 +78,18 @@ if (typeof window !== "undefined" && TOKEN) {
             // The recorder is the heaviest third party on the page.
             collectFonts: false,
             sampling: { mousemove: coarse ? false : 200 },
+            // Motion writes inline `style` every frame. Not recording those
+            // mutations keeps the replay useful without the CPU bill.
+            attributeFilter: [
+                "class",
+                "id",
+                "aria-hidden",
+                "aria-expanded",
+                "aria-pressed",
+                "data-state",
+                "hidden",
+                "open",
+            ],
         },
     });
     const campaign = firstTouch();

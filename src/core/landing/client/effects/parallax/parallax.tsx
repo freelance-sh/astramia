@@ -7,6 +7,7 @@ import {
     useTransform,
 } from "motion/react";
 import type { PropsWithChildren } from "react";
+import { useIsMobile } from "@/frontend/hooks/use-mobile";
 
 interface ParallaxLayerProps extends PropsWithChildren {
     className?: string;
@@ -21,8 +22,13 @@ export function ParallaxLayer({
     speed = 0.2,
 }: ParallaxLayerProps) {
     const reducedMotion = useReducedMotion();
+    const isMobile = useIsMobile();
     const { scrollY } = useScroll();
-    const y = useTransform(scrollY, (v) => (reducedMotion ? 0 : v * -speed));
+    const y = useTransform(scrollY, (v) =>
+        reducedMotion || isMobile ? 0 : v * -speed,
+    );
+
+    if (isMobile) return <div className={className}>{children}</div>;
 
     return (
         <motion.div className={className} style={{ y }}>

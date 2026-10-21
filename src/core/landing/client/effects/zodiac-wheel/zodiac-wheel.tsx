@@ -11,6 +11,7 @@ import {
     useTransform,
 } from "motion/react";
 import { useEffect, useRef } from "react";
+import { useIsMobile } from "@/frontend/hooks/use-mobile";
 import { cn } from "@/frontend/lib/utils";
 import { ZODIAC_SIGNS, type ZodiacSignId } from "../../../domain/zodiac";
 import styles from "./zodiac-wheel.module.css";
@@ -62,19 +63,20 @@ interface ZodiacWheelProps {
  */
 export function ZodiacWheel({ activeSign, className }: ZodiacWheelProps) {
     const reducedMotion = useReducedMotion();
+    const isMobile = useIsMobile();
     const rootRef = useRef<HTMLDivElement>(null);
     const inView = useInView(rootRef, { margin: "120px" });
     const rotate = useMotionValue(0);
     const { scrollY } = useScroll();
     const scrollRotate = useTransform(scrollY, (y) =>
-        reducedMotion ? 0 : (y / SCROLL_TURN_PX) * 90,
+        reducedMotion || isMobile ? 0 : (y / SCROLL_TURN_PX) * 90,
     );
     const activeRef = useRef<ZodiacSignId | null | undefined>(activeSign);
     activeRef.current = activeSign;
 
-    // Idling off-screen is wasted work on every phone.
+    // Off-screen or on a phone, the wheel stays still until a date is picked.
     useAnimationFrame((_, delta) => {
-        if (!inView || activeRef.current || reducedMotion) return;
+        if (!inView || isMobile || activeRef.current || reducedMotion) return;
         rotate.set(rotate.get() + delta * IDLE_SPEED);
     });
 

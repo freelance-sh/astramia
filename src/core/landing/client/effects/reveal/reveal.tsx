@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import type { PropsWithChildren } from "react";
+import { useIsMobile } from "@/frontend/hooks/use-mobile";
 
 interface RevealProps extends PropsWithChildren {
     className?: string;
@@ -11,6 +12,11 @@ interface RevealProps extends PropsWithChildren {
 /** Fades + lifts children into view once, on scroll. */
 export function Reveal({ children, className, delay = 0 }: RevealProps) {
     const reducedMotion = useReducedMotion();
+    const isMobile = useIsMobile();
+
+    // On a phone every section is already smooth without a scroll observer
+    // per block; the content just shows.
+    if (isMobile) return <div className={className}>{children}</div>;
 
     return (
         <motion.div

@@ -240,6 +240,16 @@
     }
 }
 
+@media (max-width: 1023px) {
+    /* A still wheel: the rings and glyphs are already the visual. */
+    .middle,
+    .inner,
+    .core,
+    .halo {
+        animation: none;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .middle,
     .inner,
