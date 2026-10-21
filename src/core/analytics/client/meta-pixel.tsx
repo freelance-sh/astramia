@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Script from "next/script";
 import { useEffect, useRef } from "react";
 import { PRODUCTS } from "@/core/payment/domain/catalog";
 
@@ -135,23 +134,20 @@ export const READING_VALUE = {
 export function MetaPixel() {
     const path = usePathname();
     const first = useRef(true);
+
+    // Meta's pixel is a heavy script: let the landing settle first. Any event
+    // fired meanwhile is queued above and sent once it loads.
     useEffect(() => {
-        if (first.current) {
-            first.current = false;
+        if (window.fbq) {
+            flushMeta();
             return;
         }
-        if (!isPanel(path))
-            whenReady(() => window.fbq?.("track", "PageView"));
-    }, [path]);
-
-    return (
-        <>
-            <Script
-                id="meta-pixel"
-                strategy="lazyOnload"
-                onLoad={flushMeta}
-            >
-                {`if (!location.pathname.startsWith("/panel")) {
+        if (isPanel(window.location.pathname)) return;
+        const timer = window.setTimeout(() => {
+            if (window.fbq || isPanel(window.location.pathname)) return;
+            const script = document.createElement("script");
+            script.id = "meta-pixel";
+            script.text = `
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};
 if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
@@ -163,18 +159,32 @@ s.parentNode.insertBefore(t,s)}(window, document,'script',
 fbq('set', 'autoConfig', false, '${META_PIXEL_ID}');
 fbq('init', '${META_PIXEL_ID}');
 fbq('track', 'PageView');
-}`}
-            </Script>
-            <noscript>
-                {/* biome-ignore lint/performance/noImgElement: Meta's no-JS beacon must be a plain img. */}
-                <img
-                    height="1"
-                    width="1"
-                    style={{ display: "none" }}
-                    alt=""
-                    src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
-                />
-            </noscript>
-        </>
+`;
+            document.head.appendChild(script);
+            flushMeta();
+        }, 5000);
+        return () => window.clearTimeout(timer);
+    }, []);
+
+    useEffect(() => {
+        if (first.current) {
+            first.current = false;
+            return;
+        }
+        if (!isPanel(path))
+            whenReady(() => window.fbq?.("track", "PageView"));
+    }, [path]);
+
+    return (
+        <noscript>
+            {/* biome-ignore lint/performance/noImgElement: Meta's no-JS beacon must be a plain img. */}
+            <img
+                height="1"
+                width="1"
+                style={{ display: "none" }}
+                alt=""
+                src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
+            />
+        </noscript>
     );
 }
