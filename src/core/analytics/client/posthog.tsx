@@ -63,6 +63,9 @@ if (typeof window !== "undefined" && TOKEN) {
         // surveys only add listeners and third-party scripts on a phone.
         autocapture: false,
         disable_surveys: true,
+        // The recorder is the heaviest thing on the landing; it starts on
+        // the quiz/reading, where the drop-off is (see PostHogAnalytics).
+        disable_session_recording: true,
         mask_all_text: true,
         before_send: (event) => {
             const url = event?.properties?.$current_url;
@@ -132,6 +135,12 @@ let identified: string | null = null;
  */
 export function PostHogAnalytics() {
     const path = usePathname();
+    // The landing stays recording-free (and fluid); from the quiz on, the
+    // replay is worth its cost: that's where the funnel is decided.
+    useEffect(() => {
+        if (!TOKEN || isPanel(path)) return;
+        if (path.startsWith("/lectura")) posthog.startSessionRecording();
+    }, [path]);
     useEffect(() => {
         if (!TOKEN) return;
         let cancelled = false;
