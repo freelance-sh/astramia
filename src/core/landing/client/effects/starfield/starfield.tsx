@@ -214,6 +214,7 @@ export function Starfield({ className }: { className?: string }) {
             cancelAnimationFrame(frame);
         };
         const onVisibility = () => {
+            if (mobile || reducedMotion) return;
             if (document.hidden) stop();
             else start();
         };
@@ -229,10 +230,15 @@ export function Starfield({ className }: { className?: string }) {
             pointer.py = -1e4;
         };
 
+        const onResize = () => {
+            resize();
+            if (mobile || reducedMotion) draw(0);
+        };
         resize();
-        if (reducedMotion) draw(0);
+        // On a phone the sky is a still picture: one frame, no loop.
+        if (mobile || reducedMotion) draw(0);
         else start();
-        window.addEventListener("resize", resize);
+        window.addEventListener("resize", onResize);
         document.addEventListener("visibilitychange", onVisibility);
         if (!coarse) {
             window.addEventListener("pointermove", onPointerMove, {
@@ -243,7 +249,7 @@ export function Starfield({ className }: { className?: string }) {
 
         return () => {
             stop();
-            window.removeEventListener("resize", resize);
+            window.removeEventListener("resize", onResize);
             document.removeEventListener("visibilitychange", onVisibility);
             window.removeEventListener("pointermove", onPointerMove);
             document.removeEventListener("pointerleave", onPointerLeave);

@@ -95,14 +95,29 @@
 }
 
 @media (max-width: 1023px) {
-    /* Phones and tablets: the drifting gradients stay, the repainting
-       film grain and the extra softness go. */
-    .grain,
-    .blob {
-        animation: none;
+    /* One painted gradient instead of three huge moving layers: the sky
+       looks the same and the first scroll has nothing to rasterize. */
+    .root {
+        background:
+            radial-gradient(
+                60vmax 60vmax at 15% 0%,
+                oklch(0.62 0.2 295 / 22%),
+                transparent 70%
+            ),
+            radial-gradient(
+                50vmax 50vmax at 100% 45%,
+                oklch(0.68 0.18 10 / 14%),
+                transparent 70%
+            ),
+            radial-gradient(
+                70vmax 70vmax at 40% 100%,
+                oklch(0.5 0.16 270 / 22%),
+                transparent 70%
+            );
     }
-    .blob {
-        opacity: 0.35;
+    .blob,
+    .grain {
+        display: none;
     }
 }
 
