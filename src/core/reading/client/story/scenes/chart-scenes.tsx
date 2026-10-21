@@ -174,7 +174,7 @@ function TwoRings({
             <div className={`relative aspect-square ${WHEEL_SIZE}`}>
                 <div
                     aria-hidden
-                    className="absolute inset-[14%] rounded-full bg-astral-violet/20 blur-3xl"
+                    className="absolute inset-[14%] rounded-full bg-astral-violet/20 blur-3xl max-lg:blur-xl"
                 />
                 <svg
                     viewBox="0 0 400 400"

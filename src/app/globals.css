@@ -141,15 +141,16 @@
     }
 }
 
-/* A streamed word arriving: out of a soft blur, never a jump. */
+/* A streamed word arriving: a soft fade, never a jump, and no blur filter
+   repainting every word on the way in. */
 @keyframes word-in {
     from {
         opacity: 0;
-        filter: blur(6px);
+        transform: translateY(0.12em);
     }
     to {
         opacity: 1;
-        filter: blur(0);
+        transform: translateY(0);
     }
 }
 

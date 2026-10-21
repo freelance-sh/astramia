@@ -56,7 +56,7 @@ export function SkyStrip({ className }: { className?: string }) {
         <section
             aria-label="Cielo de hoy"
             className={cn(
-                "border-astral-ink border-y bg-background/40 font-mono text-xs backdrop-blur-sm",
+                "border-astral-ink border-y bg-background/40 font-mono text-xs backdrop-blur-sm max-lg:backdrop-blur-none",
                 className,
             )}
         >

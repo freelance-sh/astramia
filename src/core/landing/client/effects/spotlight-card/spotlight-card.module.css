@@ -55,6 +55,15 @@
     opacity: 1;
 }
 
+@media (max-width: 1023px) {
+    /* Blurring what is behind a card over a moving sky is a phone's worst
+       job; the card's own background is enough. */
+    .card {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .card,
     .card:hover {

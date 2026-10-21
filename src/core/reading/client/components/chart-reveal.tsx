@@ -146,7 +146,7 @@ export function ChartReveal({
             <div className="relative aspect-square w-[min(80vw,320px)]">
                 <motion.div
                     aria-hidden
-                    className="absolute inset-[12%] rounded-full bg-astral-violet/20 blur-3xl"
+                    className="absolute inset-[12%] rounded-full bg-astral-violet/20 blur-3xl max-lg:blur-xl"
                     animate={
                         reducedMotion
                             ? undefined

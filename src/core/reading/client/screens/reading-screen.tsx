@@ -17,7 +17,7 @@ export type PaymentState = "none" | "confirming" | "failed" | "review";
 
 /** Under the preview, in the story's own style. */
 const BOX =
-    "flex flex-col gap-4 rounded-2xl border border-astral-gold/30 bg-background/70 p-6 backdrop-blur-md";
+    "flex flex-col gap-4 rounded-2xl border border-astral-gold/30 bg-background/80 p-6 backdrop-blur-md max-lg:backdrop-blur-none";
 
 /** Where the free part stops: the price, the button, or the payment's state. */
 function UnlockBox({

@@ -44,12 +44,20 @@ export function ScrambleText({
         if (!inView || reducedMotion) return;
         let frame = 0;
         let start = 0;
+        let lastPaint = 0;
+        /** The decode is rough on purpose; 16 fps is plenty and spares phones. */
+        const PAINT_MS = 64;
         const chars = Array.from(text);
         const total = chars.length;
         const randomGlyph = () =>
             GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
 
         const tick = (now: number) => {
+            if (now - lastPaint < PAINT_MS) {
+                frame = requestAnimationFrame(tick);
+                return;
+            }
+            lastPaint = now;
             if (!start) start = now + delay * 1000;
             const elapsed = (now - start) / 1000;
             if (elapsed < 0) {

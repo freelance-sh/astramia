@@ -333,9 +333,11 @@ export function Globe({
             canvas.style.display = still ? "none" : "";
             picture.style.display = still ? "" : "none";
         };
+        const coarse = window.matchMedia("(pointer: coarse)").matches;
         const gl = canvas.getContext("webgl", {
             premultipliedAlpha: true,
-            antialias: true,
+            // A phone's GPU has better things to do than smooth this sphere.
+            antialias: !coarse,
         });
         if (!gl) {
             canvas.remove();
@@ -409,7 +411,7 @@ export function Globe({
         const resize = () => {
             const ratio = Math.min(
                 window.devicePixelRatio || 1,
-                look.maxPixelRatio,
+                coarse ? 1.5 : look.maxPixelRatio,
             );
             const width = Math.round(host.clientWidth * ratio);
             const height = Math.round(host.clientHeight * ratio);
@@ -460,8 +462,12 @@ export function Globe({
                 return;
             }
             // A big Sun (the sunrise) skips frames; a small one moves at 60.
-            const step =
-                canvas.width * canvas.height > 300_000 ? look.frameStep : 1;
+            // Phones settle for 30 fps: the bodies turn slowly enough.
+            const step = coarse
+                ? Math.max(look.frameStep, 2)
+                : canvas.width * canvas.height > 300_000
+                  ? look.frameStep
+                  : 1;
             if (tick++ % step === 0) draw();
             frame = requestAnimationFrame(loop);
         };

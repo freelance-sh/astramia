@@ -64,7 +64,7 @@ export function SignExplorer() {
                                 <SelectTrigger
                                     id={`${id}-day`}
                                     aria-invalid={dayInvalid || undefined}
-                                    className="h-12 w-full bg-card/60 font-mono text-base backdrop-blur data-[size=default]:h-12"
+                                    className="h-12 w-full bg-card/60 font-mono text-base backdrop-blur max-lg:backdrop-blur-none data-[size=default]:h-12"
                                 >
                                     <SelectValue placeholder="--" />
                                 </SelectTrigger>
@@ -91,7 +91,7 @@ export function SignExplorer() {
                             <Select value={month} onValueChange={setMonth}>
                                 <SelectTrigger
                                     id={`${id}-month`}
-                                    className="h-12 w-full bg-card/60 text-base backdrop-blur data-[size=default]:h-12"
+                                    className="h-12 w-full bg-card/60 text-base backdrop-blur max-lg:backdrop-blur-none data-[size=default]:h-12"
                                 >
                                     <SelectValue placeholder="Elige un mes" />
                                 </SelectTrigger>
@@ -159,17 +159,9 @@ export function SignExplorer() {
                                 initial={
                                     reducedMotion
                                         ? false
-                                        : {
-                                              opacity: 0,
-                                              y: 10,
-                                              filter: "blur(4px)",
-                                          }
+                                        : { opacity: 0, y: 10 }
                                 }
-                                animate={{
-                                    opacity: 1,
-                                    y: 0,
-                                    filter: "blur(0px)",
-                                }}
+                                animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -6 }}
                                 transition={{
                                     duration: 0.5,

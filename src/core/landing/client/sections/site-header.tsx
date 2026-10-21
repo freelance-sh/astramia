@@ -6,7 +6,7 @@ import { AstramiaLogo } from "./astramia-logo";
 
 export function SiteHeader() {
     return (
-        <header className="sticky top-0 z-50 border-astral-ink border-b bg-background/40 backdrop-blur-xl">
+        <header className="sticky top-0 z-50 border-astral-ink border-b bg-background/40 backdrop-blur-xl max-lg:bg-background/85 max-lg:backdrop-blur-none">
             <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
                 <Link href="/" aria-label="Astramia, inicio">
                     <AstramiaLogo />

@@ -4,6 +4,7 @@ import {
     animate,
     motion,
     useAnimationFrame,
+    useInView,
     useMotionValue,
     useReducedMotion,
     useScroll,
@@ -61,6 +62,8 @@ interface ZodiacWheelProps {
  */
 export function ZodiacWheel({ activeSign, className }: ZodiacWheelProps) {
     const reducedMotion = useReducedMotion();
+    const rootRef = useRef<HTMLDivElement>(null);
+    const inView = useInView(rootRef, { margin: "120px" });
     const rotate = useMotionValue(0);
     const { scrollY } = useScroll();
     const scrollRotate = useTransform(scrollY, (y) =>
@@ -69,8 +72,9 @@ export function ZodiacWheel({ activeSign, className }: ZodiacWheelProps) {
     const activeRef = useRef<ZodiacSignId | null | undefined>(activeSign);
     activeRef.current = activeSign;
 
+    // Idling off-screen is wasted work on every phone.
     useAnimationFrame((_, delta) => {
-        if (activeRef.current || reducedMotion) return;
+        if (!inView || activeRef.current || reducedMotion) return;
         rotate.set(rotate.get() + delta * IDLE_SPEED);
     });
 
@@ -96,6 +100,7 @@ export function ZodiacWheel({ activeSign, className }: ZodiacWheelProps) {
 
     return (
         <div
+            ref={rootRef}
             aria-hidden
             className={cn(styles.root, active && styles.hasActive, className)}
         >

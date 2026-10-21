@@ -14,7 +14,6 @@
         oklch(0.62 0.2 295 / 20%) 45%,
         transparent 70%
     );
-    filter: blur(40px);
     animation: breathe 6s ease-in-out infinite;
     transition: opacity 0.6s;
 }

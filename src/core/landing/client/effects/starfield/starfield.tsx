@@ -22,6 +22,8 @@ interface ShootingStar {
 }
 
 const STAR_DENSITY = 1 / 5200;
+/** Fewer stars on phones: the sky still reads, the GPU rests. */
+const MOBILE_STAR_DENSITY = 1 / 8000;
 const SHOOTING_STAR_CHANCE = 0.004;
 const PARALLAX_STRENGTH = 18;
 /** Stars inside this radius of the pointer join a temporary constellation. */
@@ -30,8 +32,8 @@ const MAX_LINKS_PER_STAR = 3;
 const STAR_COLOR = "233, 228, 255";
 const GOLD_COLOR = "246, 231, 193";
 
-function createStars(width: number, height: number): Star[] {
-    const count = Math.round(width * height * STAR_DENSITY);
+function createStars(width: number, height: number, density: number): Star[] {
+    const count = Math.round(width * height * density);
     return Array.from({ length: count }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
@@ -57,22 +59,32 @@ export function Starfield({ className }: { className?: string }) {
         const reducedMotion = window.matchMedia(
             "(prefers-reduced-motion: reduce)",
         ).matches;
+        const coarse = window.matchMedia("(pointer: coarse)").matches;
+        const mobile = coarse || window.innerWidth < 1024;
         let stars: Star[] = [];
         let shooting: ShootingStar[] = [];
         let width = 0;
         let height = 0;
         let frame = 0;
+        let running = false;
+        let tick = 0;
         const pointer = { x: 0, y: 0, tx: 0, ty: 0, px: -1e4, py: -1e4 };
         const positions: { x: number; y: number }[] = [];
 
         const resize = () => {
-            const dpr = Math.min(window.devicePixelRatio, 2);
+            // Half the pixels of a 3x phone screen: the sky is small dots,
+            // and the canvas still looks sharp.
+            const dpr = Math.min(window.devicePixelRatio, mobile ? 1.5 : 2);
             width = canvas.clientWidth;
             height = canvas.clientHeight;
             canvas.width = width * dpr;
             canvas.height = height * dpr;
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            stars = createStars(width, height);
+            stars = createStars(
+                width,
+                height,
+                mobile ? MOBILE_STAR_DENSITY : STAR_DENSITY,
+            );
             positions.length = 0;
         };
 
@@ -123,6 +135,11 @@ export function Starfield({ className }: { className?: string }) {
         };
 
         const draw = (time: number) => {
+            // 30 fps on phones: the twinkle is slow enough to look the same.
+            if (!reducedMotion && mobile && tick++ % 2 !== 0) {
+                if (running) frame = requestAnimationFrame(draw);
+                return;
+            }
             ctx.clearRect(0, 0, width, height);
             pointer.x += (pointer.tx - pointer.x) * 0.05;
             pointer.y += (pointer.ty - pointer.y) * 0.05;
@@ -135,7 +152,11 @@ export function Starfield({ className }: { className?: string }) {
                 const offset = star.depth * PARALLAX_STRENGTH;
                 const x = star.x + pointer.x * offset;
                 const y = star.y + pointer.y * offset;
-                positions[i] = { x, y };
+                const position = positions[i];
+                if (position) {
+                    position.x = x;
+                    position.y = y;
+                } else positions[i] = { x, y };
                 ctx.globalAlpha = twinkle * (0.4 + star.depth * 0.6);
                 ctx.fillStyle =
                     star.depth > 0.85
@@ -147,7 +168,7 @@ export function Starfield({ className }: { className?: string }) {
             }
 
             ctx.globalAlpha = 1;
-            if (!reducedMotion) drawConstellation();
+            if (!reducedMotion && !coarse) drawConstellation();
 
             if (!reducedMotion && Math.random() < SHOOTING_STAR_CHANCE) {
                 shooting.push({
@@ -180,7 +201,21 @@ export function Starfield({ className }: { className?: string }) {
             }
             shooting = shooting.filter((s) => s.life > 0);
 
-            if (!reducedMotion) frame = requestAnimationFrame(draw);
+            if (running) frame = requestAnimationFrame(draw);
+        };
+
+        const start = () => {
+            if (running || reducedMotion) return;
+            running = true;
+            frame = requestAnimationFrame(draw);
+        };
+        const stop = () => {
+            running = false;
+            cancelAnimationFrame(frame);
+        };
+        const onVisibility = () => {
+            if (document.hidden) stop();
+            else start();
         };
 
         const onPointerMove = (event: PointerEvent) => {
@@ -195,16 +230,21 @@ export function Starfield({ className }: { className?: string }) {
         };
 
         resize();
-        frame = requestAnimationFrame(draw);
+        if (reducedMotion) draw(0);
+        else start();
         window.addEventListener("resize", resize);
-        window.addEventListener("pointermove", onPointerMove, {
-            passive: true,
-        });
-        document.addEventListener("pointerleave", onPointerLeave);
+        document.addEventListener("visibilitychange", onVisibility);
+        if (!coarse) {
+            window.addEventListener("pointermove", onPointerMove, {
+                passive: true,
+            });
+            document.addEventListener("pointerleave", onPointerLeave);
+        }
 
         return () => {
-            cancelAnimationFrame(frame);
+            stop();
             window.removeEventListener("resize", resize);
+            document.removeEventListener("visibilitychange", onVisibility);
             window.removeEventListener("pointermove", onPointerMove);
             document.removeEventListener("pointerleave", onPointerLeave);
         };

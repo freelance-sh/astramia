@@ -63,7 +63,7 @@ const ENTER = {
  * keeps to the bottom half (see `FADE`) and needs none.
  */
 const CARD =
-    "max-lg:rounded-2xl max-lg:border max-lg:border-astral-ink max-lg:bg-background/75 max-lg:p-5 max-lg:backdrop-blur-md";
+    "max-lg:rounded-2xl max-lg:border max-lg:border-astral-ink max-lg:bg-background/90 max-lg:p-5";
 
 /**
  * On a phone, where text dissolves going up (fractions of the screen's

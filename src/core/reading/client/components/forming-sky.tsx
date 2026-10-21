@@ -41,7 +41,7 @@ export function FormingSky({
             <div className="relative aspect-square w-[min(68vw,300px)]">
                 <div
                     aria-hidden
-                    className="absolute inset-[14%] rounded-full bg-[radial-gradient(circle,oklch(0.85_0.15_75/16%),transparent_70%)] blur-2xl"
+                    className="absolute inset-[14%] rounded-full bg-[radial-gradient(circle,oklch(0.85_0.15_75/16%),transparent_70%)] blur-2xl max-lg:blur-xl"
                 />
                 <AnimatePresence mode="wait">
                     {figure && (

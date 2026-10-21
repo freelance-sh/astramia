@@ -41,7 +41,7 @@ export function SkyScene({
             <div className={`relative aspect-square ${WHEEL_SIZE}`}>
                 <motion.div
                     aria-hidden
-                    className="absolute inset-[14%] rounded-full bg-astral-violet/25 blur-3xl"
+                    className="absolute inset-[14%] rounded-full bg-astral-violet/25 blur-3xl max-lg:blur-xl"
                     animate={
                         reducedMotion
                             ? undefined
@@ -84,7 +84,7 @@ export function StarScene() {
             <div className="relative size-[min(46vw,220px)] lg:size-[260px]">
                 <motion.div
                     aria-hidden
-                    className="absolute inset-[-40%] rounded-full bg-astral-gold/20 blur-3xl"
+                    className="absolute inset-[-40%] rounded-full bg-astral-gold/20 blur-3xl max-lg:blur-xl"
                     animate={
                         reducedMotion ? undefined : { opacity: [0.5, 1, 0.5] }
                     }

@@ -16,6 +16,7 @@ export function SpotlightCard({
 }: ComponentProps<typeof Card>) {
     const handlePointerMove = useCallback(
         (event: PointerEvent<HTMLDivElement>) => {
+            if (event.pointerType !== "mouse") return;
             const rect = event.currentTarget.getBoundingClientRect();
             event.currentTarget.style.setProperty(
                 "--spot-x",

@@ -119,7 +119,7 @@ export function ChatDemo() {
     return (
         <Card
             ref={ref}
-            className="gap-0 overflow-hidden border-astral-ink bg-card/70 py-0 backdrop-blur-xl"
+            className="gap-0 overflow-hidden border-astral-ink bg-card/70 py-0 backdrop-blur-xl max-lg:backdrop-blur-none"
         >
             <CardHeader className="flex flex-row items-center justify-between gap-4 border-astral-ink border-b py-4">
                 <div className="flex min-w-0 items-center gap-3">

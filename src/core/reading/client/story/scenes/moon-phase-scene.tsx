@@ -67,7 +67,7 @@ export function MoonPhaseScene({
             <div className="relative">
                 <motion.div
                     aria-hidden
-                    className="absolute inset-[-30%] rounded-full bg-astral-gold-soft/15 blur-3xl"
+                    className="absolute inset-[-30%] rounded-full bg-astral-gold-soft/15 blur-3xl max-lg:blur-xl"
                     animate={{ opacity: settled ? 1 : 0.35 }}
                     transition={{ duration: 1.2 }}
                 />

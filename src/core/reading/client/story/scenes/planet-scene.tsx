@@ -135,7 +135,7 @@ export function PlanetScene({
         <div className="relative flex h-full w-full flex-col items-center justify-center">
             <motion.div
                 aria-hidden
-                className="absolute top-1/2 left-1/2 size-[80%] max-w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+                className="absolute top-1/2 left-1/2 size-[80%] max-w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl max-lg:blur-xl"
                 style={{
                     background: `radial-gradient(circle, ${glow}, transparent 70%)`,
                 }}

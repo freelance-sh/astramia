@@ -68,6 +68,13 @@
     }
 }
 
+@media (max-width: 1023px) {
+    /* One more fixed, glowing layer is not worth it on a phone. */
+    .root {
+        display: none;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .comet {
         animation: none;

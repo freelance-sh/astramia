@@ -140,7 +140,7 @@ function Sun({
     return (
         <div aria-hidden className={cn("relative", className)}>
             <motion.div
-                className="absolute inset-[-55%] rounded-full blur-2xl"
+                className="absolute inset-[-55%] rounded-full blur-2xl max-lg:blur-xl"
                 style={{
                     background:
                         "radial-gradient(circle, oklch(0.82 0.16 70 / 55%), transparent 65%)",
@@ -191,7 +191,7 @@ function SpeakingSun({ speaking }: { speaking: boolean }) {
     return (
         <div aria-hidden className="relative size-40 sm:size-52">
             <motion.div
-                className="absolute inset-[22%] rounded-full blur-2xl"
+                className="absolute inset-[22%] rounded-full blur-2xl max-lg:blur-xl"
                 style={{
                     background:
                         "radial-gradient(circle, oklch(0.82 0.16 70 / 55%), transparent 65%)",
@@ -483,7 +483,7 @@ export function ReadingChat({
                                 e.preventDefault();
                                 ask(input);
                             }}
-                            className="flex items-end gap-2 rounded-3xl border border-astral-gold/30 bg-background/60 p-2 backdrop-blur-md focus-within:border-astral-gold"
+                            className="flex items-end gap-2 rounded-3xl border border-astral-gold/30 bg-background/60 p-2 backdrop-blur-md focus-within:border-astral-gold max-lg:backdrop-blur-none"
                         >
                             <Textarea
                                 value={input}
