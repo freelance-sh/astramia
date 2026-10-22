@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { FOREIGN_ERROR } from "../domain/events";
 import { flush, track, trackOn } from "./track";
 
 const UTM = ["utm_source", "utm_medium", "utm_campaign", "utm_content"];
@@ -87,7 +88,7 @@ export function SiteAnalytics() {
         };
         let errors = 0;
         const onError = (message: string, source: string) => {
-            if (errors++ >= MAX_ERRORS) return;
+            if (FOREIGN_ERROR.test(message) || errors++ >= MAX_ERRORS) return;
             track("client_error", { message: message.slice(0, 300), source });
         };
         const onWindowError = (event: ErrorEvent) =>

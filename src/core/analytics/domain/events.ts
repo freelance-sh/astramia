@@ -56,3 +56,10 @@ export type TrackBatch = z.infer<typeof trackBatchSchema>;
 /** Crawlers and link previews: their visits aren't people's. */
 export const BOT_AGENT =
     /bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp|headless|lighthouse|pingdom|curl|wget|python-requests/i;
+
+/**
+ * Errors that aren't ours to fix: the Facebook in-app browser's own bridge
+ * failing as its window closes, and cross-origin scripts, which the browser
+ * reports with no message or line at all.
+ */
+export const FOREIGN_ERROR = /Java object is gone|^Script error\.?$/;
