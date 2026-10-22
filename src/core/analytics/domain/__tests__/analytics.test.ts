@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isPanelEmail } from "../admins";
-import { BOT_AGENT, trackBatchSchema } from "../events";
+import { BOT_AGENT, FOREIGN_ERROR, trackBatchSchema } from "../events";
 import { formatSeconds, formatShare } from "../format";
 
 describe("the panel's list", () => {
@@ -79,6 +79,26 @@ describe("a batch of browser events", () => {
                 "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
             ),
         ).toBe(false);
+    });
+});
+
+describe("errors in the page", () => {
+    it("leaves out the in-app browser's bridge and opaque cross-origin errors", () => {
+        expect(
+            FOREIGN_ERROR.test(
+                "Uncaught Error: Error invoking postMessage: Java object is gone",
+            ),
+        ).toBe(true);
+        expect(FOREIGN_ERROR.test("Script error.")).toBe(true);
+    });
+
+    it("keeps the errors from our own code", () => {
+        expect(
+            FOREIGN_ERROR.test(
+                "TypeError: Cannot read properties of undefined (reading 'map')",
+            ),
+        ).toBe(false);
+        expect(FOREIGN_ERROR.test("Script error in quiz step")).toBe(false);
     });
 });
 
