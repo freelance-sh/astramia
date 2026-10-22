@@ -73,11 +73,14 @@ Cada persona cuenta para el primer anuncio por el que llegó.
 Nombres en minúsculas, `objeto_accion`:
 
 - **Visita:** `page_view` (con los utm y el sitio de origen), `page_time`,
-  `click`, `client_error`.
+  `click`, `start_reading_click` (qué botón llevó al cuestionario),
+  `client_error`.
 - **Cuestionario:** `quiz_start`, `quiz_answer` (pregunta, respuesta, paso,
-  tiempo), `quiz_back`, `quiz_submit`, `quiz_error`, `quiz_fail`.
+  tiempo), `quiz_back`, `quiz_abandon` (lo cerró sin enviarlo: paso y
+  segundos), `quiz_submit`, `quiz_error`, `quiz_fail`.
 - **Lectura:** `reading_created` (servidor, cuánto tardó), `reading_view`,
-  `story_step`, `paywall_view`, `story_end`.
+  `story_step` (con los segundos del paso anterior), `paywall_view` (con el
+  precio), `paywall_button_view`, `paywall_exit`, `story_end`.
 - **Pago:** `checkout_click`, `checkout_open`, `checkout_error`,
   `checkout_return` (servidor: pagó, falló, pendiente o se fue).
 - **Después de pagar:** `content_written` (servidor), `chat_view`,

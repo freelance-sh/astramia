@@ -96,7 +96,10 @@ export async function syncPaymentService(
         if (changed && current.status === "paid") {
             await captureServerEvent("purchase", current.userId, {
                 reading_id: current.referenceId,
-                revenue: current.price.amountCents,
+                // PostHog's revenue wants the amount in the currency's own
+                // unit (19.90), not cents (1990): the panel reads cents from
+                // the order, this event feeds their revenue charts.
+                revenue: current.price.amountCents / 100,
                 currency: current.price.currency,
                 provider,
             });
@@ -116,7 +119,7 @@ export async function syncPaymentService(
         if (changed && status === "refunded")
             await captureServerEvent("refund", current.userId, {
                 reading_id: current.referenceId,
-                revenue: -current.price.amountCents,
+                revenue: -current.price.amountCents / 100,
                 currency: current.price.currency,
                 provider,
             });

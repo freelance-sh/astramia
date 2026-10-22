@@ -41,7 +41,12 @@ export function SiteHeader() {
                         <Link href="/lecturas">Mis lecturas</Link>
                     </Button>
                     <GoldButton size="sm" asChild className="rounded-full px-4">
-                        <Link href={START_READING_HREF}>Empezar</Link>
+                        <Link
+                            href={START_READING_HREF}
+                            data-track="cta_header"
+                        >
+                            Empezar
+                        </Link>
                     </GoldButton>
                 </div>
             </div>

@@ -10,8 +10,12 @@ import { capturePostHog } from "./posthog";
 type Props = Record<string, string | number | boolean | null>;
 type TrackOptions = { instant?: boolean };
 
-/** PostHog captures these itself (pageviews, clicks, time on page). */
-const OWN_EVENTS = new Set(["page_view", "page_time", "click"]);
+/**
+ * PostHog captures these itself (pageviews and clicks). Time on page is not
+ * one of them: how long a page held someone is what tells a bounce from a
+ * visit that nearly converted, so `page_time` goes to PostHog too.
+ */
+const OWN_EVENTS = new Set(["page_view", "click"]);
 
 interface Pending {
     name: string;

@@ -102,7 +102,10 @@ export function Pricing() {
                                     asChild
                                     className="group h-12 w-full rounded-full px-7 text-base sm:w-auto"
                                 >
-                                    <Link href={START_READING_HREF}>
+                                    <Link
+                                        href={START_READING_HREF}
+                                        data-track="cta_pricing"
+                                    >
                                         Empezar mi lectura
                                         <ArrowRight className="transition-transform group-hover:translate-x-1" />
                                     </Link>

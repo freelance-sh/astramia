@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { START_READING_HREF } from "@/core/landing/domain/content";
 import { flush, track, trackOn } from "./track";
 
 const UTM = ["utm_source", "utm_medium", "utm_campaign", "utm_content"];
@@ -77,13 +78,21 @@ export function SiteAnalytics() {
                 target.dataset.track ??
                 target.getAttribute("aria-label") ??
                 target.textContent;
-            track("click", {
-                label: (label ?? "").replace(/\s+/g, " ").trim().slice(0, 80),
-                href:
-                    target instanceof HTMLAnchorElement
-                        ? target.getAttribute("href")
-                        : null,
-            });
+            const name = (label ?? "")
+                .replace(/\s+/g, " ")
+                .trim()
+                .slice(0, 80);
+            const href =
+                target instanceof HTMLAnchorElement
+                    ? target.getAttribute("href")
+                    : null;
+            track("click", { label: name, href });
+            // The step the ads pay for: leaving the landing for the quiz.
+            // `click` never reaches PostHog, so the funnel needs its own event.
+            // `placement` is the CTA's `data-track`, so each button is tellable
+            // apart (header, pricing, final).
+            if (href?.startsWith(START_READING_HREF))
+                track("start_reading_click", { placement: name, href });
         };
         let errors = 0;
         const onError = (message: string, source: string) => {

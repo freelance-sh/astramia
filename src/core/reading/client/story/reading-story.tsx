@@ -20,6 +20,7 @@ import {
 import { flush, track } from "@/core/analytics/client/track";
 import { Starfield } from "@/core/landing/client/effects";
 import { AstramiaLogo } from "@/core/landing/client/sections/astramia-logo";
+import { OFFER } from "@/core/landing/domain/content";
 import { longDate, shortDate } from "@/core/reading/domain/chart";
 import { planFor } from "@/core/reading/domain/plans";
 import {
@@ -494,23 +495,38 @@ export function ReadingStory({
     const paid = Boolean(content);
     const furthest = useRef(COVER_STEP);
     const doorAt = useRef<number | null>(null);
+    /** When the current step showed up: how long the previous one held them. */
+    const stepAt = useRef(Date.now());
     useEffect(() => {
         furthest.current = COVER_STEP;
+        stepAt.current = Date.now();
         track("reading_view", { paid, steps: story.steps.length }, reading.id);
     }, [story, paid, reading.id]);
     useEffect(() => {
         if (active <= furthest.current) return;
+        // A step that takes long is where the reading drags before the door.
+        const seconds = Math.round((Date.now() - stepAt.current) / 1000);
+        stepAt.current = Date.now();
         furthest.current = active;
         const reached = story.steps[active];
         const props = { step: active + 1, of: story.steps.length, paid };
         track(
             "story_step",
-            { ...props, kind: reached?.kind ?? null },
+            { ...props, kind: reached?.kind ?? null, seconds },
             reading.id,
         );
         if (reached?.kind === "door") {
             if (!paid) doorAt.current ??= Date.now();
-            track("paywall_view", props, reading.id);
+            // The price is what the door shows: the funnel splits by it.
+            track(
+                "paywall_view",
+                {
+                    ...props,
+                    price: OFFER.priceAmount,
+                    currency: OFFER.currency,
+                },
+                reading.id,
+            );
             // The price, seen: where the free part stops.
             if (!paid) metaEventOnce("ViewContent", READING_VALUE, reading.id);
         }

@@ -58,9 +58,14 @@ if (typeof window !== "undefined" && TOKEN) {
         capture_pageview: "history_change",
         capture_pageleave: true,
         person_profiles: "identified_only",
-        // Our own events say what happened; autocapture needn't read the
-        // answers on the buttons it records.
-        mask_all_text: true,
+        // The quiz and the reading carry `ph-mask`, and every input is masked
+        // below: with all text masked the recordings can't answer why
+        // someone left, which is what they are for.
+        mask_all_text: false,
+        // Clicks on something that isn't clickable, and where people actually
+        // scroll: what the in-app browser breaks or hides shows up here.
+        capture_dead_clicks: true,
+        capture_heatmaps: true,
         before_send: (event) => {
             const url = event?.properties?.$current_url;
             if (typeof url === "string" && isPanel(new URL(url).pathname))

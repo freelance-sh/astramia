@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { metaCustomEvent, metaEvent } from "@/core/analytics/client/meta-pixel";
-import { track } from "@/core/analytics/client/track";
+import { flush, track } from "@/core/analytics/client/track";
 import { GoldButton } from "@/core/landing/client/effects";
 import { MONTHS_ES } from "@/core/landing/domain/zodiac";
 import { PRIVACY_COMMITMENTS } from "@/core/legal/domain/policies";
@@ -258,12 +258,64 @@ export function QuizFlow({
     // When each question showed up: how long it took them is part of the answer.
     const shownAt = useRef(Date.now());
     const started = useRef(false);
+    /** When the quiz opened: from here, how long they lasted before leaving. */
+    const startedAt = useRef(Date.now());
+    /** A reading was created: leaving now is not an abandonment. */
+    const finished = useRef(false);
     useEffect(() => {
         if (started.current) return;
         started.current = true;
         track("quiz_start", { topic, knownDay: Boolean(knownBirthDay) });
         metaCustomEvent("InicioCuestionario", { tema: topic });
     }, [topic, knownBirthDay]);
+
+    // The other half of the funnel: they started and closed before submitting.
+    // Sent while the page goes away, so it must leave at once.
+    useEffect(() => {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        let sent = false;
+        const leave = (reason: "pagehide" | "hidden") => {
+            if (sent || finished.current) return;
+            sent = true;
+            track(
+                "quiz_abandon",
+                {
+                    step: step + 1,
+                    of: total,
+                    last_question: question?.id ?? "nacimiento",
+                    seconds: Math.round(
+                        (Date.now() - startedAt.current) / 1000,
+                    ),
+                    reason,
+                },
+                undefined,
+                { instant: true },
+            );
+            flush();
+        };
+        const onVisibility = () => {
+            if (document.visibilityState !== "hidden") {
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = undefined;
+                }
+                return;
+            }
+            // Same grace as the paywall: a quick tab switch isn't a goodbye.
+            timer = setTimeout(() => leave("hidden"), 1000);
+        };
+        const onPageHide = () => {
+            if (timer) clearTimeout(timer);
+            leave("pagehide");
+        };
+        document.addEventListener("visibilitychange", onVisibility);
+        window.addEventListener("pagehide", onPageHide);
+        return () => {
+            if (timer) clearTimeout(timer);
+            document.removeEventListener("visibilitychange", onVisibility);
+            window.removeEventListener("pagehide", onPageHide);
+        };
+    }, [step, total, question?.id]);
 
     // Only the year is missing: go straight to it.
     useEffect(() => {
@@ -368,6 +420,7 @@ export function QuizFlow({
                 `registro-${response.id}`,
             );
             metaEvent("Lead", { content_name: topic }, `lead-${response.id}`);
+            finished.current = true;
             router.push(`/lectura/r/${response.id}`);
         } catch {
             track("quiz_fail");

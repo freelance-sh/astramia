@@ -25,7 +25,10 @@ export function FinalCta() {
                                 asChild
                                 className="group h-13 w-full rounded-full px-8 text-base sm:w-auto"
                             >
-                                <Link href={START_READING_HREF}>
+                                <Link
+                                    href={START_READING_HREF}
+                                    data-track="cta_final"
+                                >
                                     Empezar mi lectura · {OFFER.price}
                                     <ArrowRight className="transition-transform group-hover:translate-x-1" />
                                 </Link>
